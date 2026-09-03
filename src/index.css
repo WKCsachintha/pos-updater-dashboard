@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Space Grotesk", sans-serif;
+  --font-body: "Inter", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+
+  --color-base: #0A1120;
+  --color-sidebar: #0F172A;
+  --color-card: #121C30;
+  --color-cardhover: #16233B;
+  --color-line: #1E293B;
+  --color-accent: #0066FF;
+  --color-accentdeep: #0052CC;
+  --color-ok: #22C55E;
+  --color-warn: #F59E0B;
+  --color-bad: #EF4444;
+}
+
+body {
+  background: #0A1120;
+}
+
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1E293B; border-radius: 4px; }
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeIn .2s ease-out; }
