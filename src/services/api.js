@@ -35,14 +35,16 @@ export default function App() {
 
       if (response.data.status === "success" && response.data.data) {
         const formattedVersions = response.data.data.map((ver, index) => ({
+
           versionId: ver.versionId,
           versionNumber: ver.versionNumber,
-          systemType: "Supermarket POS",
+          systemType: ver.systemType || ver.category || "General POS",
           releaseNotes: ver.releaseNotes || "No release notes provided.",
           fileName: ver.fileUrl ? ver.fileUrl.split('/').pop() : "Package.zip",
           createdDate: ver.createdDate,
           status: index === 0 ? "Active" : "Archived" // Set the latest as Active
-        }));
+        })); 
+        console.log("Formatted Versions:", formattedVersions);
         
         setVersions(formattedVersions);
       } else {
@@ -68,12 +70,13 @@ export default function App() {
 
   // Handle publishing a new release (ZIP upload)
   async function handlePublish(formDataObj) {
+    console.log("Publishing release with data:");
     try {
       const formData = new FormData();
       formData.append("versionNumber", formDataObj.versionNumber || formDataObj.releaseName);
       formData.append("releaseNotes", formDataObj.releaseNotes || "");
-      formData.append("companyName", formDataObj.company || formDataObj.companyName || "ALL");
-      formData.append("branchName", formDataObj.branch || formDataObj.branchName || "ALL");
+      formData.append("systemType", formDataObj.systemType || "Supermarket POS");
+      formData.append("branchName", formDataObj.branch || formDataObj.branchName || "");
       formData.append("isMandatory", formDataObj.isMandatory ? 1 : 0);
       
       if (formDataObj.file) {
@@ -81,10 +84,9 @@ export default function App() {
       }
 
       console.log("Uploading file...", formDataObj.file ? formDataObj.file.name : "No file");
+      console.log("Form Data:", formData);
 
-      const response = await axios.post(`${API_BASE_URL}?action=upload_release`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const response = await axios.post(`${API_BASE_URL}?action=upload_release`, formData);
 
       console.log("Upload Response:", response.data);
 

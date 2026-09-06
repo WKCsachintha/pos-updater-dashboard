@@ -9,7 +9,7 @@ const SYSTEM_TYPES = [
   "Mobile POS"
 ];
 
-// Companies List (අవශ්‍ය පරිදි සමාගම් නම් මෙහි එකතු කරගත හැක)
+// Companies List
 const COMPANIES = [
   "ALL",
   "delmo",
@@ -135,7 +135,7 @@ function RegistryItem({ version, onDeleteRelease }) {
   );
 }
 
-export default function ReleaseManager({ versions, onPublish, onDeleteRelease }) {
+export default function ReleaseManager({ versions = [], onPublish, onDeleteRelease }) {
   const [file, setFile] = useState(null);
   const [search, setSearch] = useState("");
 
@@ -143,8 +143,8 @@ export default function ReleaseManager({ versions, onPublish, onDeleteRelease })
     const q = search.trim().toLowerCase();
     if (!q) return versions;
     return versions.filter((v) =>
-      v.versionNumber.toLowerCase().includes(q) ||
-      v.releaseNotes.toLowerCase().includes(q) ||
+      (v.versionNumber && v.versionNumber.toLowerCase().includes(q)) ||
+      (v.releaseNotes && v.releaseNotes.toLowerCase().includes(q)) ||
       (v.systemType && v.systemType.toLowerCase().includes(q)) ||
       (v.category && v.category.toLowerCase().includes(q))
     );
@@ -154,14 +154,19 @@ export default function ReleaseManager({ versions, onPublish, onDeleteRelease })
     e.preventDefault();
     if (!file) return;
     const form = new FormData(e.target);
+    
+   
     onPublish({
       systemType: form.get("systemType"),
       versionNumber: form.get("versionNumber"),
       releaseNotes: form.get("releaseNotes"),
-      companyName: form.get("companyName"), // <--- Company නම ලබා ගැනීම
+      company: form.get("companyName"),     
+      companyName: form.get("companyName"), 
+      branchName: "ALL",
       fileName: file.name,
       file: file
     });
+    
     e.target.reset();
     setFile(null);
   }
@@ -178,19 +183,8 @@ export default function ReleaseManager({ versions, onPublish, onDeleteRelease })
           <form onSubmit={handleSubmit} className="space-y-5">
             <Dropzone file={file} setFile={setFile} />
 
-            {/* Target Company Selection */}
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Target Company</label>
-              <select 
-                name="companyName" 
-                required
-                className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent"
-              >
-                {COMPANIES.map((comp) => (
-                  <option key={comp} value={comp}>{comp}</option>
-                ))}
-              </select>
-            </div>
+          
+          
 
             <div className="grid grid-cols-2 gap-4">
               <div>
