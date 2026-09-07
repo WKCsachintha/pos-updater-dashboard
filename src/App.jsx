@@ -11,12 +11,18 @@ import UpdateLogs from "./components/UpdateLogs";
 import ErrorModal from "./components/ErrorModal";
 import ActiveReleaseModal from "./components/ActiveReleaseModal";
 import TargetReleasePage from "./components/TargetReleasePage";
-import MasterSettingsPage from "./components/MasterSettingsPage"; // 💡 MasterSettingsPage එක Import කිරීම
+import MasterSettingsPage from "./components/MasterSettingsPage";
+import LoginPage from "./components/LoginPage";
 
 // Backend API URL
 const API_BASE = "http://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
 
 export default function App() {
+  // Login Status එක SessionStorage මඟින් පාලනය කිරීම
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return sessionStorage.getItem("pos_auth") === "true";
+  });
+
   const [view, setView] = useState("overview");
   const [versions, setVersions] = useState([]);
   const [monitorData, setMonitorData] = useState([]);
@@ -25,8 +31,12 @@ export default function App() {
   const [showActiveDetails, setShowActiveDetails] = useState(false);
 
   useEffect(() => {
-    fetchDashboardData();
-  }, []);
+    if (isAuthenticated) {
+      fetchDashboardData();
+    } else {
+      setLoading(false);
+    }
+  }, [isAuthenticated]);
 
   async function fetchDashboardData() {
     setLoading(true);
@@ -65,14 +75,13 @@ export default function App() {
 
   const activeVersion = versions.find((v) => v.status === "Active");
 
-  // 1. Release Manager එකෙන් ZIP ෆයිල් එක Upload කර අලුත් Version එකක් Registry එකට දැමීම
+  // 1. Release Manager එකෙන් ZIP Upload කිරීම
   async function handlePublish(formDataObj) {
     try {
       const formData = new FormData();
       formData.append("versionNumber", formDataObj.versionNumber);
       formData.append("releaseNotes", formDataObj.releaseNotes || "");
       formData.append("systemType", formDataObj.systemType || "Supermarket POS");
-      // formData.append("isMandatory", formDataObj.isMandatory ? 1 : 0);
 
       if (formDataObj.file) {
         formData.append("zipFile", formDataObj.file);
@@ -100,7 +109,7 @@ export default function App() {
     }
   }
 
-  // 2. Target Release Page එකෙන් පවතින Version එකක් Company/Branch වෙත Assign කිරීම (JSON Data)
+  // 2. Target Release Page එකෙන් Target Assign කිරීම
   async function handleTargetPublish(targetData) {
     try {
       console.log("Target Publishing...", targetData);
@@ -126,6 +135,18 @@ export default function App() {
 
   async function handleDeleteRelease(versionId) {
     setVersions((prev) => prev.filter((v) => v.versionId !== versionId));
+  }
+
+  // Auth Guard: Login වී නැත්නම් LoginPage එක පෙන්වීම
+  if (!isAuthenticated) {
+    return (
+      <LoginPage
+        onLoginSuccess={() => {
+          sessionStorage.setItem("pos_auth", "true");
+          setIsAuthenticated(true);
+        }}
+      />
+    );
   }
 
   if (loading) {
@@ -162,8 +183,6 @@ export default function App() {
           )}
           {view === "monitor" && <DeploymentMonitor data={monitorData} onViewError={setErrorRow} />}
           {view === "logs" && <UpdateLogs data={monitorData} onViewError={setErrorRow} />}
-          
-          {/* 💡 Master Settings View එක මෙතැනට එකතු කරන ලදී */}
           {view === "master_settings" && <MasterSettingsPage />}
         </main>
       </div>
