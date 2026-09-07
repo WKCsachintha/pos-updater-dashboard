@@ -9,23 +9,28 @@ const TABS = [
   { key: "failed", label: "❌ Failed Updates" },
 ];
 
+// Backend API URL
+const API_BASE = "http://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
+
 export default function DeploymentMonitor({ onViewError }) {
   const [filter, setFilter] = useState("all");
-  const [data, setData] = useState([]); // API එකෙන් එන දත්ත තබා ගැනීමට
+  const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // API එකෙන් දත්ත ලබා ගැනීම (Fetch Deployments / Logs)
+  // API එකෙන් Deployments Fetch කරගැනීම
   const fetchDeployments = async () => {
     setLoading(true);
     try {
-      // මෙතැනට ඔබේ Server එකේ ලැයිස්තුව ලබාදෙන API Endpoint එක දෙන්න
-      const API_URL = import.meta.env.VITE_API_BASE_URL;
-      const response = await axios.get(`${API_URL}?action=get_deployments`); 
+      const response = await axios.get(`${API_BASE}?action=get_deployments`);
       
-      // Server එකෙන් එන format එක අනුව මෙය වෙනස් විය හැක
-      setData(response.data.data || []); 
+      if (response.data && response.data.status === "success") {
+        setData(response.data.data || []);
+      } else {
+        setData([]);
+      }
     } catch (error) {
       console.error("Error fetching deployments:", error);
+      setData([]);
     } finally {
       setLoading(false);
     }
@@ -64,12 +69,13 @@ export default function DeploymentMonitor({ onViewError }) {
               }`}
             >
               {tab.label}
-              <span className={`text-[11px] px-1.5 py-0.5 rounded ${filter === tab.key ? "bg-white/20" : "bg-line"}`}>{counts[tab.key]}</span>
+              <span className={`text-[11px] px-1.5 py-0.5 rounded ${filter === tab.key ? "bg-white/20" : "bg-line"}`}>
+                {counts[tab.key]}
+              </span>
             </button>
           ))}
         </div>
         
-        {/* Refresh Button එකට අපේ fetchDeployments פונקცია එක සම්බන්ධ කළා */}
         <button 
           onClick={fetchDeployments}
           className="text-xs text-slate-400 hover:text-white border border-line px-3 py-2 rounded-md flex items-center gap-1.5"
@@ -86,7 +92,7 @@ export default function DeploymentMonitor({ onViewError }) {
           <thead>
             <tr className="text-left text-[11px] text-slate-500 border-b border-line uppercase tracking-wide">
               <th className="px-5 py-3 font-medium">Company</th>
-              <th className="px-5 py-3 font-medium">Branch</th>
+              <th className="px-5 py-3 font-medium">Branch Index</th>
               <th className="px-5 py-3 font-medium">Machine ID</th>
               <th className="px-5 py-3 font-medium">Installed Version</th>
               <th className="px-5 py-3 font-medium">Last Updated</th>
@@ -97,26 +103,33 @@ export default function DeploymentMonitor({ onViewError }) {
           <tbody className="divide-y divide-line">
             {loading ? (
               <tr>
-                <td colSpan="7" className="text-center py-6 text-slate-400">Loading live data from server...</td>
+                <td colSpan="7" className="text-center py-6 text-slate-400">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin"></div>
+                    Loading live telemetry data...
+                  </div>
+                </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan="7" className="text-center py-6 text-slate-400">No records found.</td>
+                <td colSpan="7" className="text-center py-6 text-slate-400">No telemetry logs found from POS clients.</td>
               </tr>
             ) : (
-              rows.map((r) => (
-                <tr key={r.machineId} className="hover:bg-white/[0.02] transition-colors">
-                  <td className="px-5 py-3.5 text-slate-200">{r.company}</td>
-                  <td className="px-5 py-3.5 text-slate-400">{r.branch}</td>
-                  <td className="px-5 py-3.5 font-mono text-xs text-slate-400">{r.machineId}</td>
-                  <td className={`px-5 py-3.5 font-mono text-xs ${r.installed === r.latest ? "text-slate-300" : "text-warn"}`}>{r.installed}</td>
-                  <td className="px-5 py-3.5 text-slate-500 text-xs">{r.updatedAt}</td>
+              rows.map((r, index) => (
+                <tr key={r.machineId || index} className="hover:bg-white/[0.02] transition-colors">
+                  <td className="px-5 py-3.5 text-slate-200 font-medium">{r.company}</td>
+                  <td className="px-5 py-3.5 text-slate-400 font-mono">Branch #{r.branch}</td>
+                  <td className="px-5 py-3.5 font-mono text-xs text-slate-300">{r.machineId || "N/A"}</td>
+                  <td className="px-5 py-3.5 font-mono text-xs text-accent">v{r.installed}</td>
+                  <td className="px-5 py-3.5 text-slate-400 text-xs font-mono">{r.updatedAt}</td>
                   <td className="px-5 py-3.5"><StatusPill status={r.status} /></td>
                   <td className="px-5 py-3.5 text-right">
                     {r.status === "FAILED" ? (
-                      <button onClick={() => onViewError(r)} className="text-xs text-bad hover:text-red-300 font-medium">View Error</button>
+                      <button onClick={() => onViewError(r)} className="text-xs text-red-400 hover:underline font-medium">
+                        View Error
+                      </button>
                     ) : (
-                      <button className="text-xs text-slate-500 hover:text-white">Force Push</button>
+                      <span className="text-xs text-slate-500">Active</span>
                     )}
                   </td>
                 </tr>

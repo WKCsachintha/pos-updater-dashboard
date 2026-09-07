@@ -1,48 +1,59 @@
-import { useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
+import axios from "axios";
 
-// System Categories List
-const APP_CATEGORIES = [
-  "Supermarket POS",
-  "Restaurant POS",
-  "Windows Service",
-  "Backoffice",
-  "Mobile POS",
-];
+const API_BASE = "http://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
 
-export default function Overview({ versions, stats, onOpenActiveDetails, setView }) {
-  const activeVersion = versions.find((v) => v.status === "Active");
+export default function Overview({ versions, onOpenActiveDetails, setView }) {
+  const [categories, setCategories] = useState([]);
+  const [stats, setStats] = useState({ updated: 0, pending: 0, failed: 0, total: 0, pct: 0 });
+  const [loading, setLoading] = useState(true);
 
-  // System Categories 5න් දැනට Active වී ඇති Systems ගණන සෙවීම
+  // Dashboard Live Stats & Dynamic Categories Fetch කිරීම
+  useEffect(() => {
+    fetchDashboardStats();
+  }, []);
+
+  async function fetchDashboardStats() {
+    setLoading(true);
+    try {
+      const response = await axios.get(`${API_BASE}?action=get_dashboard_stats`);
+      if (response.data && response.data.status === "success") {
+        setCategories(response.data.categories || []);
+        setStats(response.data.stats || { updated: 0, pending: 0, failed: 0, total: 0, pct: 0 });
+      }
+    } catch (error) {
+      console.error("Error fetching dashboard stats:", error);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  // Active වී ඇති Categories ගණන
   const activeSystemsCount = useMemo(() => {
     const activeCats = new Set();
     versions.forEach((v) => {
-      if (v.status === "Active" && (v.systemType || v.category)) {
-        activeCats.add(v.systemType || v.category);
+      if (v.systemType) {
+        activeCats.add(v.systemType);
       }
     });
     return activeCats.size;
   }, [versions]);
 
-  // Category අනුව Active Versions සෙවීම
+  // Category අනුව Active Version එක සෙවීම
   const latestCategoryVersions = useMemo(() => {
-    return APP_CATEGORIES.map((category) => {
-      const match =
-        versions.find(
-          (v) => (v.systemType === category || v.category === category) && v.status === "Active"
-        ) || versions.find((v) => v.systemType === category || v.category === category);
-
+    return categories.map((category) => {
+      const match = versions.find((v) => v.systemType === category);
       return {
         category,
         versionNumber: match ? match.versionNumber : "N/A",
-        status: match ? match.status : "Inactive",
+        status: match ? "Active" : "Inactive",
       };
     });
-  }, [versions]);
+  }, [versions, categories]);
 
-  // Pie Chart එක සඳහා Degrees ගණනය කිරීම
+  // Donut Chart Degrees
   const updatedPct = stats.total ? (stats.updated / stats.total) * 100 : 0;
   const pendingPct = stats.total ? (stats.pending / stats.total) * 100 : 0;
-  
   const updatedDeg = (updatedPct / 100) * 360;
   const pendingDeg = updatedDeg + (pendingPct / 100) * 360;
 
@@ -59,7 +70,7 @@ export default function Overview({ versions, stats, onOpenActiveDetails, setView
             <div>
               <p className="text-xs text-slate-500">Active System Categories</p>
               <p className="font-display text-3xl font-semibold text-white mt-2">
-                {activeSystemsCount} <span className="text-sm font-normal text-slate-400">/ {APP_CATEGORIES.length}</span>
+                {activeSystemsCount} <span className="text-sm font-normal text-slate-400">/ {categories.length}</span>
               </p>
             </div>
             <div className="w-9 h-9 rounded-md bg-accent/15 flex items-center justify-center text-accent">
@@ -68,10 +79,9 @@ export default function Overview({ versions, stats, onOpenActiveDetails, setView
               </svg>
             </div>
           </div>
-          {/* <p className="text-xs text-accent mt-3 group-hover:underline">View details per system →</p> */}
         </button>
 
-        {/* 2. Overall Fully Updated Branches */}
+        {/* 2. Fully Updated Branches */}
         <div className="bg-card border border-line rounded-lg p-5">
           <div className="flex items-start justify-between">
             <div>
@@ -80,7 +90,7 @@ export default function Overview({ versions, stats, onOpenActiveDetails, setView
                 {stats.updated} <span className="text-sm font-normal text-slate-400">/ {stats.total}</span>
               </p>
             </div>
-            <div className="w-9 h-9 rounded-md bg-ok/15 flex items-center justify-center text-ok">
+            <div className="w-9 h-9 rounded-md bg-emerald-500/15 flex items-center justify-center text-emerald-400">
               <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
               </svg>
@@ -96,7 +106,7 @@ export default function Overview({ versions, stats, onOpenActiveDetails, setView
               <p className="text-xs text-slate-500">Pending / Outdated</p>
               <p className="font-display text-3xl font-semibold text-white mt-2">{stats.pending}</p>
             </div>
-            <div className="w-9 h-9 rounded-md bg-warn/15 flex items-center justify-center text-warn">
+            <div className="w-9 h-9 rounded-md bg-amber-500/15 flex items-center justify-center text-amber-400">
               <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
               </svg>
@@ -112,7 +122,7 @@ export default function Overview({ versions, stats, onOpenActiveDetails, setView
               <p className="text-xs text-slate-500">Failed Updates</p>
               <p className="font-display text-3xl font-semibold text-white mt-2">{stats.failed}</p>
             </div>
-            <div className="w-9 h-9 rounded-md bg-bad/15 flex items-center justify-center text-bad">
+            <div className="w-9 h-9 rounded-md bg-red-500/15 flex items-center justify-center text-red-400">
               <svg className="w-[18px] h-[18px]" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
               </svg>
@@ -142,7 +152,9 @@ export default function Overview({ versions, stats, onOpenActiveDetails, setView
               <div
                 className="w-40 h-40 rounded-full transition-all duration-500"
                 style={{
-                  background: `conic-gradient(#10b981 0deg ${updatedDeg}deg, #f59e0b ${updatedDeg}deg ${pendingDeg}deg, #ef4444 ${pendingDeg}deg 360deg)`,
+                  background: stats.total > 0 
+                    ? `conic-gradient(#10b981 0deg ${updatedDeg}deg, #f59e0b ${updatedDeg}deg ${pendingDeg}deg, #ef4444 ${pendingDeg}deg 360deg)`
+                    : '#1e293b',
                 }}
               />
               <div className="absolute w-28 h-28 bg-card rounded-full flex flex-col items-center justify-center border border-line/50">
@@ -183,23 +195,27 @@ export default function Overview({ versions, stats, onOpenActiveDetails, setView
         <div className="bg-card border border-line rounded-lg p-5">
           <h3 className="font-display font-semibold text-white text-sm mb-4">Active System Versions</h3>
           <div className="space-y-3">
-            {latestCategoryVersions.map((item) => (
-              <div key={item.category} className="flex items-center justify-between text-sm py-1 border-b border-line/40 last:border-0">
-                <div>
-                  <p className="text-slate-200 text-xs font-medium">{item.category}</p>
-                  <p className="text-[11px] text-slate-500 font-mono">
-                    {item.versionNumber !== "N/A" ? `v${item.versionNumber}` : "No Active Version"}
-                  </p>
+            {categories.length === 0 ? (
+              <p className="text-xs text-slate-500 py-4 text-center">No categories registered in Master Settings.</p>
+            ) : (
+              latestCategoryVersions.map((item) => (
+                <div key={item.category} className="flex items-center justify-between text-sm py-1 border-b border-line/40 last:border-0">
+                  <div>
+                    <p className="text-slate-200 text-xs font-medium">{item.category}</p>
+                    <p className="text-[11px] text-slate-500 font-mono">
+                      {item.versionNumber !== "N/A" ? `v${item.versionNumber}` : "No Active Version"}
+                    </p>
+                  </div>
+                  <span className={`text-[10px] px-2 py-0.5 rounded-full ${
+                    item.status === "Active" 
+                      ? "bg-accent/15 text-accent font-medium" 
+                      : "bg-line text-slate-500"
+                  }`}>
+                    {item.status}
+                  </span>
                 </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full ${
-                  item.status === "Active" 
-                    ? "bg-accent/15 text-accent font-medium" 
-                    : "bg-line text-slate-500"
-                }`}>
-                  {item.status}
-                </span>
-              </div>
-            ))}
+              ))
+            )}
           </div>
           <button onClick={() => setView("publish")} className="w-full mt-4 text-xs text-accent hover:text-white font-medium text-left">
             Publish a target release →

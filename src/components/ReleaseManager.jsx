@@ -1,40 +1,11 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
+import axios from "axios";
 
-// POS/Application System Categories List
-const SYSTEM_TYPES = [
-  "Supermarket POS",
-  "Restaurant POS",
-  "Windows Service",
-  "Backoffice",
-  "Mobile POS"
-];
-
-// Companies List
-const COMPANIES = [
-  "ALL",
-  "delmo",
-  "Keells",
-  "Cargills"
-];
+const API_BASE = "http://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
 
 function Dropzone({ file, setFile }) {
   const inputRef = useRef(null);
   const [dragging, setDragging] = useState(false);
-  const [progress, setProgress] = useState(0);
-
-  function simulateUpload(f) {
-    setFile(f);
-    setProgress(0);
-    let pct = 0;
-    const timer = setInterval(() => {
-      pct += Math.random() * 18;
-      if (pct >= 100) {
-        pct = 100;
-        clearInterval(timer);
-      }
-      setProgress(Math.round(pct));
-    }, 150);
-  }
 
   return (
     <div>
@@ -46,7 +17,7 @@ function Dropzone({ file, setFile }) {
         onDrop={(e) => {
           e.preventDefault();
           setDragging(false);
-          if (e.dataTransfer.files[0]) simulateUpload(e.dataTransfer.files[0]);
+          if (e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
         }}
         className={`border-2 border-dashed rounded-lg py-8 px-4 text-center cursor-pointer transition-colors ${
           dragging ? "border-accent bg-accent/5" : "border-line hover:border-accent/60"
@@ -57,7 +28,7 @@ function Dropzone({ file, setFile }) {
           type="file"
           accept=".zip"
           className="hidden"
-          onChange={(e) => e.target.files[0] && simulateUpload(e.target.files[0])}
+          onChange={(e) => e.target.files[0] && setFile(e.target.files[0])}
         />
         <svg className="w-8 h-8 mx-auto text-slate-500 mb-2" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
@@ -69,19 +40,8 @@ function Dropzone({ file, setFile }) {
             Drag & drop your <span className="text-slate-200 font-medium">.zip</span> build here, or <span className="text-accent">browse files</span>
           </p>
         )}
-        <p className="text-[11px] text-slate-600 mt-1">Max 500MB — dynamic FileUrl generated</p>
+        <p className="text-[11px] text-slate-600 mt-1">Max 500MB — dynamic FileUrl generated on server</p>
       </div>
-      {file && (
-        <div className="mt-3">
-          <div className="flex justify-between text-[11px] text-slate-500 mb-1">
-            <span className="font-mono">{file.name}</span>
-            <span>{progress}%</span>
-          </div>
-          <div className="w-full h-1.5 bg-line rounded-full overflow-hidden">
-            <div className="h-full bg-accent rounded-full transition-all" style={{ width: `${progress}%` }} />
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -113,7 +73,7 @@ function RegistryItem({ version, onDeleteRelease }) {
             <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4" />
           </svg>
           <span className="text-xs text-slate-300 font-mono truncate">
-            {version.fileName || `${categoryName.replace(/\s+/g, "_")}_${version.versionNumber}.zip`}
+            {version.fileName || version.fileUrl?.split('/').pop() || `${categoryName.replace(/\s+/g, "_")}_v${version.versionNumber}.zip`}
           </span>
         </div>
         <button
@@ -138,6 +98,24 @@ function RegistryItem({ version, onDeleteRelease }) {
 export default function ReleaseManager({ versions = [], onPublish, onDeleteRelease }) {
   const [file, setFile] = useState(null);
   const [search, setSearch] = useState("");
+  const [systemTypes, setSystemTypes] = useState([]);
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Database එකෙන් Active Application Categories Load කරගැනීම
+  useEffect(() => {
+    async function fetchCategories() {
+      try {
+        const res = await axios.get(`${API_BASE}?action=get_all_release_categories`);
+        if (res.data?.status === "success") {
+          const catList = res.data.data.map(c => c.display_name);
+          setSystemTypes(catList);
+        }
+      } catch (err) {
+        console.error("Error loading release categories:", err);
+      }
+    }
+    fetchCategories();
+  }, []);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -145,46 +123,53 @@ export default function ReleaseManager({ versions = [], onPublish, onDeleteRelea
     return versions.filter((v) =>
       (v.versionNumber && v.versionNumber.toLowerCase().includes(q)) ||
       (v.releaseNotes && v.releaseNotes.toLowerCase().includes(q)) ||
-      (v.systemType && v.systemType.toLowerCase().includes(q)) ||
-      (v.category && v.category.toLowerCase().includes(q))
+      (v.systemType && v.systemType.toLowerCase().includes(q))
     );
   }, [versions, search]);
 
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    if (!file) return;
+    if (!file) {
+      alert("Please select a .zip package file.");
+      return;
+    }
+
     const form = new FormData(e.target);
-    
-   
-    onPublish({
-      systemType: form.get("systemType"),
-      versionNumber: form.get("versionNumber"),
-      releaseNotes: form.get("releaseNotes"),
-      company: form.get("companyName"),     
-      companyName: form.get("companyName"), 
-      branchName: "ALL",
-      fileName: file.name,
-      file: file
-    });
-    
-    e.target.reset();
-    setFile(null);
+    setIsUploading(true);
+
+    try {
+      await onPublish({
+        systemType: form.get("systemType"),
+        versionNumber: form.get("versionNumber"),
+        releaseNotes: form.get("releaseNotes"),
+        companyName: "ALL",
+        branchName: "ALL",
+        fileName: file.name,
+        file: file
+      });
+
+      e.target.reset();
+      setFile(null);
+    } catch (err) {
+      console.error("Upload failed:", err);
+    } finally {
+      setIsUploading(false);
+    }
   }
 
   return (
     <section className="space-y-6 fade-in">
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-5">
+        
+        {/* Left Form: Publish New Update */}
         <div className="xl:col-span-3 bg-card border border-line rounded-lg p-6">
           <h3 className="font-display font-semibold text-white text-base mb-1">Publish New Update</h3>
           <p className="text-xs text-slate-500 mb-5">
-            Upload package, select target company & application type, and save version details.
+            Upload package, select application category, and register version details into database.
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <Dropzone file={file} setFile={setFile} />
-
-          
-          
 
             <div className="grid grid-cols-2 gap-4">
               <div>
@@ -194,9 +179,13 @@ export default function ReleaseManager({ versions = [], onPublish, onDeleteRelea
                   required
                   className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent"
                 >
-                  {SYSTEM_TYPES.map((type) => (
-                    <option key={type} value={type}>{type}</option>
-                  ))}
+                  {systemTypes.length === 0 ? (
+                    <option value="Supermarket POS">Supermarket POS</option>
+                  ) : (
+                    systemTypes.map((type) => (
+                      <option key={type} value={type}>{type}</option>
+                    ))
+                  )}
                 </select>
               </div>
 
@@ -206,8 +195,8 @@ export default function ReleaseManager({ versions = [], onPublish, onDeleteRelea
                   name="versionNumber"
                   type="text"
                   required
-                  placeholder="e.g. 1.0.6"
-                  className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-accent"
+                  placeholder="e.g. 1.0.8"
+                  className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 font-mono placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-accent"
                 />
               </div>
             </div>
@@ -223,12 +212,18 @@ export default function ReleaseManager({ versions = [], onPublish, onDeleteRelea
               <p className="text-[11px] text-slate-600 mt-1">Markdown supported</p>
             </div>
 
-            <button type="submit" className="w-full sm:w-auto px-5 py-2.5 bg-accent hover:bg-accentdeep text-white text-sm font-medium rounded-md transition-colors">
-              Upload Update
+            <button 
+              type="submit" 
+              disabled={isUploading}
+              className="w-full sm:w-auto px-5 py-2.5 bg-accent hover:bg-accentdeep text-white text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+            >
+              {isUploading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
+              {isUploading ? "Uploading Build..." : "Upload Update"}
             </button>
           </form>
         </div>
 
+        {/* Right Side: Version Registry List */}
         <div className="xl:col-span-2 bg-card border border-line rounded-lg p-6 flex flex-col h-[650px]">
           <h3 className="font-display font-semibold text-white text-base mb-3">Version Registry</h3>
 
@@ -247,7 +242,7 @@ export default function ReleaseManager({ versions = [], onPublish, onDeleteRelea
 
           <div className="space-y-3 overflow-y-auto pr-1.5 flex-1 custom-scrollbar">
             {filtered.length === 0 ? (
-              <p className="text-xs text-slate-600 text-center py-10">No versions match “{search}”.</p>
+              <p className="text-xs text-slate-600 text-center py-10">No versions found in Database.</p>
             ) : (
               filtered.map((v) => (
                 <RegistryItem key={v.versionId} version={v} onDeleteRelease={onDeleteRelease} />
@@ -255,6 +250,7 @@ export default function ReleaseManager({ versions = [], onPublish, onDeleteRelea
             )}
           </div>
         </div>
+
       </div>
     </section>
   );
