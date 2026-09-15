@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 
 const API_BASE = "http://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
@@ -9,10 +9,11 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
   const [branchList, setBranchList] = useState([]);
   
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [releaseName, setReleaseName] = useState("");
-  const [showVersionDropdown, setShowVersionDropdown] = useState(false);
-  const [company, setCompany] = useState("ALL");
-  const [branch, setBranch] = useState("0");
+  const [versionId, setVersionId] = useState(""); // releaseName වෙනුවට versionId භාවිත කර ඇත
+  
+  const [company, setCompany] = useState("");
+  const [branch, setBranch] = useState("ALL");
+  const [terminal, setTerminal] = useState("ALL");
   const [isMandatory, setIsMandatory] = useState(false);
   
   const [activeDeployments, setActiveDeployments] = useState([]);
@@ -23,7 +24,6 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
     fetchActiveDeployments();
   }, []);
 
-  // 1. Database එකෙන් Master Data Fetch කිරීම (Categories, Companies, Branches)
   async function fetchInitialMasterData() {
     try {
       const [catRes, compRes, branchRes] = await Promise.all([
@@ -32,65 +32,89 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
         axios.get(`${API_BASE}?action=get_all_branches`)
       ]);
 
-      if (catRes.data?.status === "success") {
+      if (catRes.data?.status === "success" && Array.isArray(catRes.data.data)) {
         const cats = catRes.data.data.map(c => c.display_name);
         setCategories(cats);
         if (cats.length > 0) setSelectedCategory(cats[0]);
+      } else {
+        setCategories([]);
       }
 
-      if (compRes.data?.status === "success") {
-        setCompanyList(compRes.data.data || []);
+      if (compRes.data?.status === "success" && Array.isArray(compRes.data.data)) {
+        setCompanyList(compRes.data.data);
+      } else {
+        setCompanyList([]);
       }
 
-      if (branchRes.data?.status === "success") {
-        setBranchList(branchRes.data.data || []);
+      if (branchRes.data?.status === "success" && Array.isArray(branchRes.data.data)) {
+        setBranchList(branchRes.data.data);
+      } else {
+        setBranchList([]);
       }
     } catch (error) {
       console.error("Error fetching master dropdowns:", error);
     }
   }
 
-  // 2. Active Target Deployments Fetch කිරීම
   const fetchActiveDeployments = async () => {
     setLoadingDeployments(true);
     try {
       const response = await axios.get(`${API_BASE}?action=get_target_deployments`);
-      if (response.data && response.data.status === "success") {
-        setActiveDeployments(response.data.data || []);
+      if (response.data?.status === "success" && Array.isArray(response.data.data)) {
+        setActiveDeployments(response.data.data);
+      } else {
+        setActiveDeployments([]);
       }
     } catch (error) {
       console.error("Error fetching target deployments:", error);
+      setActiveDeployments([]);
     } finally {
       setLoadingDeployments(false);
     }
   };
 
-  // Database Versions Filter කිරීම
-  const filteredVersions = versions
-    .map((v) => v.versionNumber)
-    .filter((v) => v.toLowerCase().includes(releaseName.toLowerCase()));
+  const categoryVersions = useMemo(() => {
+    if (!selectedCategory || !Array.isArray(versions)) return [];
+    return versions.filter(
+      (v) => v.systemType === selectedCategory || v.category === selectedCategory
+    );
+  }, [versions, selectedCategory]);
 
-  // 3. Active Deployment Card එකක් Click කළ විට Form එකට Auto-fill වීම
   const handleSelectDeployment = (item) => {
-    setReleaseName(item.version || "");
-    if (item.category) setSelectedCategory(item.category);
-    setCompany(item.company || "ALL");
-    setBranch(item.branch ? String(item.branch) : "0");
+    if (!item) return;
+
+    if (item.category) {
+      setSelectedCategory(item.category);
+    }
+    setTimeout(() => {
+      setVersionId(item.versionId || "");
+    }, 50);
+    
+    setCompany(item.company_index || item.company || "");
+    setBranch(item.branch ? String(item.branch) : "ALL");
+    setTerminal(item.terminal || "ALL");
     setIsMandatory(Boolean(item.mandatory));
   };
 
   async function handleSubmit(e) {
     e.preventDefault();
-    if (!releaseName.trim()) {
-      alert("Please select or enter a Release Version.");
+
+    if (!versionId) {
+      alert("Please select a Release Version from the dropdown.");
       return;
     }
 
+    if (!company) {
+      alert("Please select a Target Company.");
+      return;
+    }
+
+    // 💡 versionId එක Integer එකක් ලෙස Payload එකට යවයි
     const targetData = {
-      releaseName: releaseName.replace(/^v/i, ''),
-      category: selectedCategory,
-      company: company,
+      versionId: parseInt(versionId, 10),
+      company: parseInt(company, 10),
       branch: branch,
+      terminal: terminal || "ALL",
       isMandatory: isMandatory ? 1 : 0,
     };
 
@@ -101,7 +125,11 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
         alert("Target release published successfully!");
         if (onPublish) onPublish(targetData);
         fetchActiveDeployments();
-        setReleaseName("");
+        
+        // Reset Form
+        setVersionId("");
+        setCompany("");
+        setTerminal("ALL");
         setIsMandatory(false);
       } else {
         alert("Error: " + (response.data.message || "Could not publish target."));
@@ -124,91 +152,99 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
+            
             {/* Category Dropdown */}
             <div>
               <label className="block text-xs font-medium text-slate-400 mb-1.5">Application Category</label>
               <select
                 value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  setVersionId(""); 
+                }}
                 className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent"
               >
                 {categories.length === 0 ? (
                   <option value="">Loading Categories...</option>
                 ) : (
-                  categories.map((cat) => (
-                    <option key={cat} value={cat}>{cat}</option>
+                  categories.map((cat, idx) => (
+                    <option key={`cat-${idx}`} value={cat}>{cat}</option>
                   ))
                 )}
               </select>
             </div>
 
-            {/* Release Version Autocomplete */}
-            <div className="relative">
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Release Version (Search/Type)</label>
+            {/* Release Version Dropdown */}
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">Release Version</label>
+              <select
+                value={versionId}
+                onChange={(e) => setVersionId(e.target.value)}
+                required
+                className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent font-mono"
+              >
+                <option value="" disabled>-- Select Version --</option>
+                {categoryVersions.length === 0 ? (
+                  <option value="" disabled>No versions found for this category</option>
+                ) : (
+                  categoryVersions.map((v, idx) => (
+                    <option key={`ver-${v.versionId || idx}`} value={v.versionId}>
+                      v{v.versionNumber} {v.releaseNotes ? ` - ${v.releaseNotes.substring(0, 30)}...` : ""}
+                    </option>
+                  ))
+                )}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              {/* Target Company Dropdown */}
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                  Target Company <span className="text-red-400">*</span>
+                </label>
+                <select
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
+                  required
+                  className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  <option value="" disabled>-- Select Company --</option>
+                  {companyList.map((c, idx) => (
+                    <option key={`comp-${c.company_index || idx}`} value={c.company_index}>
+                      {c.company_display_name || c.company_name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Target Branch Dropdown */}
+              <div>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Target Branch</label>
+                <select
+                  value={branch}
+                  onChange={(e) => setBranch(e.target.value)}
+                  className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent"
+                >
+                  <option value="ALL">ALL Branches</option>
+                  {branchList.map((b, idx) => (
+                    <option key={`branch-${b.branch_index || idx}`} value={b.branch_index}>
+                      {b.branch_name} ({b.branch_code || `Index: ${b.branch_index}`})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Target Terminal / Machine ID */}
+            <div>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">Target Terminal / Machine ID</label>
               <input
                 type="text"
-                required
-                value={releaseName}
-                onChange={(e) => {
-                  setReleaseName(e.target.value);
-                  setShowVersionDropdown(true);
-                }}
-                onFocus={() => setShowVersionDropdown(true)}
-                onBlur={() => setTimeout(() => setShowVersionDropdown(false), 200)}
-                placeholder="Search database versions (e.g. 1.0.6)"
+                value={terminal}
+                onChange={(e) => setTerminal(e.target.value)}
+                placeholder="e.g. DelPan3 or ALL"
                 className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent font-mono"
               />
-
-              {showVersionDropdown && filteredVersions.length > 0 && (
-                <div className="absolute z-10 w-full mt-1 bg-card border border-line rounded-md shadow-lg max-h-40 overflow-y-auto">
-                  {filteredVersions.map((v) => (
-                    <div
-                      key={v}
-                      onClick={() => {
-                        setReleaseName(v);
-                        setShowVersionDropdown(false);
-                      }}
-                      className="px-3 py-2 text-xs text-slate-300 hover:bg-accent/20 hover:text-white cursor-pointer transition-colors font-mono"
-                    >
-                      v{v}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-
-            {/* Target Company Dropdown */}
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Target Company</label>
-              <select
-                value={company}
-                onChange={(e) => setCompany(e.target.value)}
-                className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent"
-              >
-                <option value="ALL">ALL Companies</option>
-                {companyList.map((c) => (
-                  <option key={c.company_index} value={c.company_name}>
-                    {c.company_display_name || c.company_name}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Target Branch Dropdown */}
-            <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Target Branch</label>
-              <select
-                value={branch}
-                onChange={(e) => setBranch(e.target.value)}
-                className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent"
-              >
-                <option value="0">ALL Branches</option>
-                {branchList.map((b) => (
-                  <option key={b.branch_index} value={b.branch_index}>
-                    {b.branch_name} ({b.branch_code || `Index: ${b.branch_index}`})
-                  </option>
-                ))}
-              </select>
             </div>
 
             {/* Mandatory Checkbox */}
@@ -251,9 +287,9 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
               ) : activeDeployments.length === 0 ? (
                 <p className="text-xs text-slate-500 text-center py-6">No active target deployments found.</p>
               ) : (
-                activeDeployments.map((item) => (
+                activeDeployments.map((item, idx) => (
                   <div
-                    key={item.id}
+                    key={`dep-${item.id || idx}`}
                     onClick={() => handleSelectDeployment(item)}
                     className="p-3 bg-base/60 border border-line/70 hover:border-accent/60 rounded-md space-y-1.5 cursor-pointer transition-all hover:bg-base"
                   >

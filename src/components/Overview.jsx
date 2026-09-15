@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE = "http://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
+const API_BASE = "http://demo.onlineserp.com/serp/app/integration/poss_new/exe_realese.php";
 
 export default function Overview({ versions, onOpenActiveDetails, setView }) {
   const [categories, setCategories] = useState([]);

@@ -1,7 +1,8 @@
+
 import { useMemo, useRef, useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE = "http://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
+const API_BASE = "http://demo.onlineserp.com/serp/app/integration/poss_new/exe_realese.php";
 
 function Dropzone({ file, setFile }) {
   const inputRef = useRef(null);
@@ -98,17 +99,16 @@ function RegistryItem({ version, onDeleteRelease }) {
 export default function ReleaseManager({ versions = [], onPublish, onDeleteRelease }) {
   const [file, setFile] = useState(null);
   const [search, setSearch] = useState("");
-  const [systemTypes, setSystemTypes] = useState([]);
+  const [categoriesList, setCategoriesList] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
 
-  // Database එකෙන් Active Application Categories Load කරගැනීම
+  // Database එකෙන් Active Categories Objects Load කරගැනීම
   useEffect(() => {
     async function fetchCategories() {
       try {
         const res = await axios.get(`${API_BASE}?action=get_all_release_categories`);
-        if (res.data?.status === "success") {
-          const catList = res.data.data.map(c => c.display_name);
-          setSystemTypes(catList);
+        if (res.data?.status === "success" && Array.isArray(res.data.data)) {
+          setCategoriesList(res.data.data);
         }
       } catch (err) {
         console.error("Error loading release categories:", err);
@@ -138,12 +138,11 @@ export default function ReleaseManager({ versions = [], onPublish, onDeleteRelea
     setIsUploading(true);
 
     try {
+      // PHP Query එකට category_index (ID) එක යවනු ලැබේ
       await onPublish({
-        systemType: form.get("systemType"),
+        systemType: form.get("systemType"), 
         versionNumber: form.get("versionNumber"),
         releaseNotes: form.get("releaseNotes"),
-        companyName: "ALL",
-        branchName: "ALL",
         fileName: file.name,
         file: file
       });
@@ -179,11 +178,14 @@ export default function ReleaseManager({ versions = [], onPublish, onDeleteRelea
                   required
                   className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent"
                 >
-                  {systemTypes.length === 0 ? (
-                    <option value="Supermarket POS">Supermarket POS</option>
+                  {categoriesList.length === 0 ? (
+                    <option value="1">Supermarket POS</option>
                   ) : (
-                    systemTypes.map((type) => (
-                      <option key={type} value={type}>{type}</option>
+                    categoriesList.map((cat) => (
+                      /* Value එක ලෙස category_index එක ලබා දේ */
+                      <option key={cat.category_index} value={cat.category_index}>
+                        {cat.display_name}
+                      </option>
                     ))
                   )}
                 </select>

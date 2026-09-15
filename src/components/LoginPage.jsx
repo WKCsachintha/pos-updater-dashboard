@@ -42,11 +42,11 @@ export default function LoginPage({ onLoginSuccess }) {
                 setPassword(e.target.value);
                 setError(false);
               }}
-              placeholder="Enter password (e.g. 1234)"
+              placeholder="Enter password (e.g. 2026)"
               className="w-full bg-base border border-line rounded-md px-3.5 py-2.5 text-sm text-slate-200 placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-accent"
             />
             {error && (
-              <p className="text-[11px] text-red-400 mt-1">Invalid password! Please try again (Password is 1234).</p>
+              <p className="text-[11px] text-red-400 mt-1">Invalid password! Please try again (Password hint is 2026).</p>
             )}
           </div>
 
