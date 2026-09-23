@@ -6,7 +6,7 @@ export default function LoginPage({ onLoginSuccess }) {
 
   function handleLogin(e) {
     e.preventDefault();
-    if (password === "1234") {
+    if (password === "051131") {
       onLoginSuccess(); // Login සාර්ථක නම් App එකට දැනුම් දීම
     } else {
       setError(true);
