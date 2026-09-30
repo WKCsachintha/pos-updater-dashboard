@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE = "http://demo.onlineserp.com/serp/app/integration/poss_new/exe_realese.php";
+const API_BASE = "http://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
 
 export default function Overview({ versions, onOpenActiveDetails, setView }) {
   const [categories, setCategories] = useState([]);
@@ -81,11 +81,11 @@ export default function Overview({ versions, onOpenActiveDetails, setView }) {
           </div>
         </button>
 
-        {/* 2. Fully Updated Branches */}
+        {/* 2. Fully Updated Terminals */}
         <div className="bg-card border border-line rounded-lg p-5">
           <div className="flex items-start justify-between">
             <div>
-              <p className="text-xs text-slate-500">Fully Updated Branches</p>
+              <p className="text-xs text-slate-500">Fully Updated Terminals</p>
               <p className="font-display text-3xl font-semibold text-white mt-2">
                 {stats.updated} <span className="text-sm font-normal text-slate-400">/ {stats.total}</span>
               </p>
@@ -96,7 +96,7 @@ export default function Overview({ versions, onOpenActiveDetails, setView }) {
               </svg>
             </div>
           </div>
-          <p className="text-xs text-slate-500 mt-3">Overall branches on latest builds ({stats.pct}%)</p>
+          <p className="text-xs text-slate-500 mt-3">Overall Terminals on latest builds ({stats.pct}%)</p>
         </div>
 
         {/* 3. Pending / Outdated */}
@@ -133,61 +133,90 @@ export default function Overview({ versions, onOpenActiveDetails, setView }) {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-        {/* Rollout Status Donut Chart Section */}
-        <div className="xl:col-span-2 bg-card border border-line rounded-lg p-6">
-          <div className="flex items-center justify-between mb-6">
+        {/* Rollout Status Modern Glowing 3D Donut Chart Section */}
+        <div className="xl:col-span-2 bg-card/80 backdrop-blur-md border border-line rounded-xl p-6 shadow-2xl relative overflow-hidden group">
+          
+          {/* Ambient Background Glow Effect */}
+          <div className="absolute -top-24 -left-24 w-60 h-60 bg-accent/15 rounded-full blur-3xl pointer-events-none group-hover:bg-accent/25 transition-all duration-700" />
+          <div className="absolute -bottom-24 -right-24 w-60 h-60 bg-emerald-500/10 rounded-full blur-3xl pointer-events-none" />
+
+          <div className="flex items-center justify-between mb-6 relative z-10">
             <div>
-              <h3 className="font-display font-semibold text-white text-base">
-                Overall Rollout Status — All Systems
+              <h3 className="font-display font-semibold text-white text-base tracking-wide flex items-center gap-2">
+                <span className="w-2 h-2 rounded-full bg-accent animate-pulse" />
+                Overall Rollout Status
               </h3>
-              <p className="text-xs text-slate-500 mt-0.5">Deployment breakdown across all {stats.total} branches</p>
+              <p className="text-xs text-slate-400 mt-0.5">Deployment breakdown across all {stats.total} Terminals</p>
             </div>
-            <span className="text-xs font-mono text-accent bg-accent/10 px-2.5 py-1 rounded-md font-semibold">
+            <div className="text-xs font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-500/30 px-3 py-1.5 rounded-lg shadow-[0_0_12px_rgba(6,182,212,0.15)] font-semibold flex items-center gap-1.5">
+              <span className="w-1.5 h-1.5 rounded-full bg-cyan-400" />
               {stats.pct}% Success
-            </span>
+            </div>
           </div>
 
-          <div className="flex flex-col md:flex-row items-center justify-around gap-6 py-2">
-            <div className="relative flex items-center justify-center">
+          <div className="flex flex-col md:flex-row items-center justify-around gap-8 py-4 relative z-10">
+            
+            {/* Glowing 3D Donut Ring */}
+            <div className="relative flex items-center justify-center shrink-0">
+              {/* Outer Layer Subtle Glow Ring */}
+              <div className="absolute w-48 h-48 rounded-full border border-slate-700/50 bg-slate-900/40 shadow-[0_0_30px_rgba(0,0,0,0.8)] backdrop-blur-sm" />
+              
+              {/* Dynamic Conic Gradient Slice Ring */}
               <div
-                className="w-40 h-40 rounded-full transition-all duration-500"
+                className="w-44 h-44 rounded-full transition-all duration-700 p-2"
                 style={{
                   background: stats.total > 0 
                     ? `conic-gradient(#10b981 0deg ${updatedDeg}deg, #f59e0b ${updatedDeg}deg ${pendingDeg}deg, #ef4444 ${pendingDeg}deg 360deg)`
                     : '#1e293b',
+                  boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.7), inset 0 2px 4px rgba(255, 255, 255, 0.1)'
                 }}
-              />
-              <div className="absolute w-28 h-28 bg-card rounded-full flex flex-col items-center justify-center border border-line/50">
-                <span className="font-display text-2xl font-bold text-white">{stats.pct}%</span>
-                <span className="text-[10px] text-slate-500 font-medium">Completed</span>
+              >
+                {/* Inner Cutout with Depth & Metallic Shadow */}
+                <div className="w-full h-full bg-slate-950 rounded-full flex flex-col items-center justify-center border border-slate-800/80 shadow-[inset_0_4px_12px_rgba(0,0,0,0.9)] relative">
+                  <span className="font-display text-3xl font-bold bg-gradient-to-r from-white via-slate-100 to-slate-400 bg-clip-text text-transparent drop-shadow-[0_2px_8px_rgba(255,255,255,0.2)]">
+                    {stats.pct}%
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-medium uppercase tracking-widest mt-0.5">Completed</span>
+                </div>
               </div>
             </div>
 
-            <div className="space-y-3.5 text-xs min-w-[200px]">
-              <div className="flex items-center justify-between p-2 rounded bg-base/40 border border-line/30">
-                <span className="flex items-center gap-2 text-slate-300">
-                  <span className="w-3 h-3 rounded-sm bg-emerald-500 inline-block" />
+            {/* Futuristic Status Legend Cards */}
+            <div className="space-y-3 text-xs w-full max-w-[240px]">
+              {/* Updated Status */}
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-emerald-500/20 hover:border-emerald-500/50 transition-all duration-300 shadow-md hover:shadow-[0_0_15px_rgba(16,185,129,0.15)] group/card">
+                <span className="flex items-center gap-2.5 text-slate-300 font-medium">
+                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-[0_0_8px_#10b981]" />
                   Updated
                 </span>
-                <span className="font-mono text-white font-semibold">{stats.updated}</span>
+                <span className="font-mono text-emerald-400 font-bold text-sm bg-emerald-950/40 px-2 py-0.5 rounded border border-emerald-500/20">
+                  {stats.updated}
+                </span>
               </div>
 
-              <div className="flex items-center justify-between p-2 rounded bg-base/40 border border-line/30">
-                <span className="flex items-center gap-2 text-slate-300">
-                  <span className="w-3 h-3 rounded-sm bg-amber-500 inline-block" />
+              {/* Pending Status */}
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-amber-500/20 hover:border-amber-500/50 transition-all duration-300 shadow-md hover:shadow-[0_0_15px_rgba(245,158,11,0.15)] group/card">
+                <span className="flex items-center gap-2.5 text-slate-300 font-medium">
+                  <span className="w-2.5 h-2.5 rounded-full bg-amber-400 shadow-[0_0_8px_#f59e0b]" />
                   Pending
                 </span>
-                <span className="font-mono text-white font-semibold">{stats.pending}</span>
+                <span className="font-mono text-amber-400 font-bold text-sm bg-amber-950/40 px-2 py-0.5 rounded border border-amber-500/20">
+                  {stats.pending}
+                </span>
               </div>
 
-              <div className="flex items-center justify-between p-2 rounded bg-base/40 border border-line/30">
-                <span className="flex items-center gap-2 text-slate-300">
-                  <span className="w-3 h-3 rounded-sm bg-red-500 inline-block" />
+              {/* Failed Status */}
+              <div className="flex items-center justify-between p-2.5 rounded-lg bg-slate-900/80 border border-red-500/20 hover:border-red-500/50 transition-all duration-300 shadow-md hover:shadow-[0_0_15px_rgba(239,68,68,0.15)] group/card">
+                <span className="flex items-center gap-2.5 text-slate-300 font-medium">
+                  <span className="w-2.5 h-2.5 rounded-full bg-red-500 shadow-[0_0_8px_#ef4444]" />
                   Failed
                 </span>
-                <span className="font-mono text-white font-semibold">{stats.failed}</span>
+                <span className="font-mono text-red-400 font-bold text-sm bg-red-950/40 px-2 py-0.5 rounded border border-red-500/20">
+                  {stats.failed}
+                </span>
               </div>
             </div>
+
           </div>
         </div>
 

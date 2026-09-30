@@ -3,7 +3,7 @@
 // import axios from "axios";
 
 // // සැබෑ සර්වර් API එකේ URL එක
-// const API_BASE = "http://demo.onlineserp.com/serp/app/integration/poss_new/exe_realese.php";
+// const API_BASE = "http://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
 
 // export default function MasterSettingsPage() {
 //   const [activeTab, setActiveTab] = useState("categories"); // categories, companies, branches, terminals
@@ -85,7 +85,7 @@
 //       else if (activeTab === "terminals") actionName = "toggle_terminal_active";
 
 //       const payload = {
-//         [indexField]: indexVal,
+//         [indexField]: parseInt (indexVal),
 //         is_active: currentStatus ? 0 : 1
 //       };
 
@@ -100,9 +100,6 @@
 //     }
 //   }
 
-
-
-
 //   // 3. අලුතින් ඩේටා Add කිරීම (POST Actions)
 //   async function handleAddNew(e) {
 //     e.preventDefault();
@@ -113,7 +110,7 @@
 //     let actionName = "";
 //     let payload = {};
 
-//     // Form Data වල සැබෑ අගයන් තිබේදැයි පරීක්ෂා කිරීම (Empty Call වැළැක්වීම)
+//     // Form Data වල සැබෑ අගයන් තිබේදැයි පරීක්ෂා කිරීම
 //     if (activeTab === "categories") {
 //       if (!formData.display_name.trim() || !formData.folder_name.trim()) return;
 //       actionName = "add_release_category";
@@ -154,22 +151,21 @@
 //       setSubmitting(false); // Request එක ඉවර වූ පසු නිදහස් කිරීම
 //     }
 //   }
+
+//   // 💡 Table එකට පෙන්වන ඩේටා ෆිල්ටර් කිරීම (Company & Branch අනුව)
 //   let filteredDataList = dataList;
 
 //   if (activeTab === "branches" && formData.company_index) {
-//     // Branches ටැබ් එකේදී තෝරාගත් Company එකට අදාළව පමණක් ෆිල්ටර් කිරීම
 //     filteredDataList = dataList.filter(item => String(item.company_index) === String(formData.company_index));
 //   } else if (activeTab === "terminals" && formData.company_index) {
-//     // Terminals ටැබ් එකේදී තෝරාගත් Company එකට අදාළව ෆිල්ටර් කිරීම
 //     filteredDataList = dataList.filter(item => String(item.company_index) === String(formData.company_index));
     
-//     // Terminals ටැබ් එකේ Branch එකකුත් තෝරාගෙන ඇත්නම්, එයින්ද ෆිල්ටර් කිරීම
 //     if (formData.branch_index) {
 //       filteredDataList = filteredDataList.filter(item => String(item.branch_index) === String(formData.branch_index));
 //     }
 //   }
+  
 //   return (
-
 //     <section className="space-y-6 fade-in">
 //       {/* Header & Tabs */}
 //       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-card border border-line p-5 rounded-lg">
@@ -182,7 +178,10 @@
 //           {["categories", "companies", "branches", "terminals"].map((tab) => (
 //             <button
 //               key={tab}
-//               onClick={() => setActiveTab(tab)}
+//               onClick={() => {
+//                 setActiveTab(tab);
+//                 setFormData({ display_name: "", folder_name: "", company_name: "", company_display_name: "", branch_name: "", branch_code: "", company_index: "", terminal_number: "", branch_index: "" });
+//               }}
 //               className={`px-3 py-1.5 text-xs font-medium rounded capitalize transition-colors ${
 //                 activeTab === tab ? "bg-accent text-white" : "text-slate-400 hover:text-slate-200"
 //               }`}
@@ -251,7 +250,7 @@
 //               <>
 //                 <div>
 //                   <label className="block text-[11px] text-slate-400 mb-1">Select Company</label>
-//                   <select required value={formData.company_index} onChange={(e) => setFormData({...formData, company_index: e.target.value})} className="w-full bg-base border border-line rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent">
+//                   <select required value={formData.company_index} onChange={(e) => setFormData({...formData, company_index: e.target.value, branch_index: ""})} className="w-full bg-base border border-line rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent">
 //                     <option value="">Select Company...</option>
 //                     {companiesList.map((c) => (
 //                       <option key={c.company_index} value={c.company_index}>{c.company_display_name || c.company_name}</option>
@@ -262,7 +261,7 @@
 //                   <label className="block text-[11px] text-slate-400 mb-1">Select Branch</label>
 //                   <select required value={formData.branch_index} onChange={(e) => setFormData({...formData, branch_index: e.target.value})} className="w-full bg-base border border-line rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent">
 //                     <option value="">Select Branch...</option>
-//                     {branchesList.filter(b => !formData.company_index || b.company_index == formData.company_index).map((b) => (
+//                     {branchesList.filter(b => !formData.company_index || String(b.company_index) === String(formData.company_index)).map((b) => (
 //                       <option key={b.branch_index} value={b.branch_index}>{b.branch_name} ({b.branch_code})</option>
 //                     ))}
 //                   </select>
@@ -313,6 +312,7 @@
 //                     {activeTab === "branches" && (
 //                       <>
 //                         <th className="p-3">Index</th>
+//                         <th className="p-3">Branch Number</th>
 //                         <th className="p-3">Branch Name</th>
 //                         <th className="p-3">Code</th>
 //                         <th className="p-3">Company Index</th>
@@ -333,17 +333,22 @@
 //                   </tr>
 //                 </thead>
 //                 <tbody className="divide-y divide-line text-xs text-slate-300">
-//                   {/* 1. මෙතන dataList වෙනුවට filteredDataList යොදන්න */}
 //                   {filteredDataList.length === 0 ? (
 //                     <tr><td colSpan="6" className="p-6 text-center text-slate-500">No records found.</td></tr>
 //                   ) : (
-//                     // 2. මෙතනත් dataList වෙනුවට filteredDataList යොදන්න
-//                     filteredDataList.map((item) => {
-//                       const idx = item.category_index || item.company_index || item.branch_index || item.terminal_index;
-//                       const fieldKey = activeTab === "categories" ? "category_index" : activeTab === "companies" ? "company_index" : activeTab === "branches" ? "branch_index" : "terminal_index";
+//                     filteredDataList.map((item, mapIndex) => {
+//                       // 💡 1. නිවැරදි Primary Key එක තේරීම
+//                       const fieldKey = activeTab === "categories" ? "category_index" 
+//                                      : activeTab === "companies" ? "company_index" 
+//                                      : activeTab === "branches" ? "branch_index"
+//                                      : "terminal_index";
+                      
+//                       // 💡 2. ඒ ඒ ටැබ් එකට ආවේණික වූ Index එක ලබා ගැනීම
+//                       const idx = item[fieldKey] || mapIndex; 
                       
 //                       return (
-//                         <tr key={idx} className="hover:bg-base/30 transition-colors">
+//                         // 💡 3. Key එක Unique වීමට ActiveTab එකත් එක්කම Key එක සෑදීම
+//                         <tr key={`${activeTab}-${idx}`} className="hover:bg-base/30 transition-colors">
 //                           {activeTab === "categories" && (
 //                             <>
 //                               <td className="p-3 font-mono">#{item.category_index}</td>
@@ -382,7 +387,9 @@
 
 //                           {activeTab === "branches" && (
 //                             <>
-//                               <td className="p-3 font-mono">#{item.branch_index}</td>
+//                               <td className="p-3 font-mono">#{item.index}</td>
+//                               <td className="p-3 font-mono">{item.branch_index}</td>
+                              
 //                               <td className="p-3 font-medium text-white">{item.branch_name}</td>
 //                               <td className="p-3 font-mono text-slate-400">{item.branch_code}</td>
 //                               <td className="p-3 font-mono text-slate-400">{item.company_index}</td>
@@ -392,7 +399,7 @@
 //                                 </span>
 //                               </td>
 //                               <td className="p-3 text-right">
-//                                 <button onClick={() => handleToggleActive(fieldKey, idx, item.is_active)} className="px-2.5 py-1 bg-base border border-line rounded text-[11px] text-slate-300 hover:text-white hover:border-accent transition-colors">
+//                                 <button onClick={() => handleToggleActive("index", item.index, item.is_active)} className="px-2.5 py-1 bg-base border border-line rounded text-[11px] text-slate-300 hover:text-white hover:border-accent transition-colors">
 //                                   {item.is_active ? "Deactivate" : "Activate"}
 //                                 </button>
 //                               </td>
@@ -434,7 +441,6 @@
 
 
 
-
 import { useState, useEffect } from "react";
 import axios from "axios";
 
@@ -442,12 +448,11 @@ import axios from "axios";
 const API_BASE = "http://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
 
 export default function MasterSettingsPage() {
-  const [activeTab, setActiveTab] = useState("categories"); // categories, companies, branches, terminals
+  const [activeTab, setActiveTab] = useState("categories"); 
   const [dataList, setDataList] = useState([]);
   const [loading, setLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // Form input states
   const [formData, setFormData] = useState({
     display_name: "", folder_name: "",
     company_name: "", company_display_name: "",
@@ -455,7 +460,6 @@ export default function MasterSettingsPage() {
     terminal_number: "", branch_index: ""
   });
 
-  // Dropdown lists
   const [companiesList, setCompaniesList] = useState([]);
   const [branchesList, setBranchesList] = useState([]);
 
@@ -469,7 +473,7 @@ export default function MasterSettingsPage() {
     }
   }, [activeTab]);
 
-  // 1. සර්වර් එකෙන් ඩේටා Fetch කරගැනීම (GET Actions)
+  // 1. Fetch All Data (සම්පූර්ණ දත්ත ගෙන්වා ගැනීම)
   async function fetchTabData() {
     setLoading(true);
     try {
@@ -511,7 +515,7 @@ export default function MasterSettingsPage() {
     }
   }
 
-  // 2. Status එක Toggle කිරීම (Active / Inactive)
+  // 2. Toggle Status
   async function handleToggleActive(indexField, indexVal, currentStatus) {
     try {
       let actionName = "";
@@ -521,7 +525,7 @@ export default function MasterSettingsPage() {
       else if (activeTab === "terminals") actionName = "toggle_terminal_active";
 
       const payload = {
-        [indexField]: indexVal,
+        [indexField]: parseInt(indexVal),
         is_active: currentStatus ? 0 : 1
       };
 
@@ -536,17 +540,16 @@ export default function MasterSettingsPage() {
     }
   }
 
-  // 3. අලුතින් ඩේටා Add කිරීම (POST Actions)
+  // 3. Add New Data
   async function handleAddNew(e) {
     e.preventDefault();
-    e.stopPropagation(); // Event bubbling නතර කිරීමට
+    e.stopPropagation(); 
 
-    if (submitting) return; // දැනටමත් Submit වෙනවා නම් නවත්වන්න
+    if (submitting) return; 
 
     let actionName = "";
     let payload = {};
 
-    // Form Data වල සැබෑ අගයන් තිබේදැයි පරීක්ෂා කිරීම
     if (activeTab === "categories") {
       if (!formData.display_name.trim() || !formData.folder_name.trim()) return;
       actionName = "add_release_category";
@@ -584,26 +587,29 @@ export default function MasterSettingsPage() {
       console.error("Add record error:", err);
       alert("Server error while adding record.");
     } finally {
-      setSubmitting(false); // Request එක ඉවර වූ පසු නිදහස් කිරීම
+      setSubmitting(false); 
     }
   }
 
-  // 💡 Table එකට පෙන්වන ඩේටා ෆිල්ටර් කිරීම (Company & Branch අනුව)
+  // 💡 Frontend Filtering Logic (Table එකට පෙන්වන ඩේටා ෆිල්ටර් කිරීම)
   let filteredDataList = dataList;
 
   if (activeTab === "branches" && formData.company_index) {
+    // Branches ටැබ් එකේ Company එකක් තේරූ විට Table එක Filter වීම
     filteredDataList = dataList.filter(item => String(item.company_index) === String(formData.company_index));
-  } else if (activeTab === "terminals" && formData.company_index) {
-    filteredDataList = dataList.filter(item => String(item.company_index) === String(formData.company_index));
-    
+  } else if (activeTab === "terminals") {
+    // Terminals ටැබ් එකේ Company එකක් තේරූ විට Table එක Filter වීම
+    if (formData.company_index) {
+      filteredDataList = dataList.filter(item => String(item.company_index) === String(formData.company_index));
+    }
+    // ඉන්පසු Branch එකක් තේරූ විට තවත් දුරට Table එක Filter වීම
     if (formData.branch_index) {
       filteredDataList = filteredDataList.filter(item => String(item.branch_index) === String(formData.branch_index));
     }
   }
-  
+
   return (
     <section className="space-y-6 fade-in">
-      {/* Header & Tabs */}
       <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 bg-card border border-line p-5 rounded-lg">
         <div>
           <h2 className="font-display font-semibold text-white text-base">Master Data Management</h2>
@@ -629,7 +635,6 @@ export default function MasterSettingsPage() {
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-        {/* Left Side: Add Form */}
         <div className="bg-card border border-line p-5 rounded-lg h-fit space-y-4">
           <h3 className="font-display font-semibold text-white text-sm capitalize">Add New {activeTab.slice(0, -1)}</h3>
           
@@ -663,7 +668,7 @@ export default function MasterSettingsPage() {
             {activeTab === "branches" && (
               <>
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">Select Company</label>
+                  <label className="block text-[11px] text-slate-400 mb-1">Select Company (Filters Table)</label>
                   <select required value={formData.company_index} onChange={(e) => setFormData({...formData, company_index: e.target.value})} className="w-full bg-base border border-line rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent">
                     <option value="">Select Company...</option>
                     {companiesList.map((c) => (
@@ -685,7 +690,7 @@ export default function MasterSettingsPage() {
             {activeTab === "terminals" && (
               <>
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">Select Company</label>
+                  <label className="block text-[11px] text-slate-400 mb-1">Select Company (Filters Dropdown & Table)</label>
                   <select required value={formData.company_index} onChange={(e) => setFormData({...formData, company_index: e.target.value, branch_index: ""})} className="w-full bg-base border border-line rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent">
                     <option value="">Select Company...</option>
                     {companiesList.map((c) => (
@@ -694,9 +699,10 @@ export default function MasterSettingsPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[11px] text-slate-400 mb-1">Select Branch</label>
+                  <label className="block text-[11px] text-slate-400 mb-1">Select Branch (Filters Table)</label>
                   <select required value={formData.branch_index} onChange={(e) => setFormData({...formData, branch_index: e.target.value})} className="w-full bg-base border border-line rounded px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent">
                     <option value="">Select Branch...</option>
+                    {/* 💡 තේරූ Company එකට අදාළ Branches පමණක් මෙහි පෙන්වයි */}
                     {branchesList.filter(b => !formData.company_index || String(b.company_index) === String(formData.company_index)).map((b) => (
                       <option key={b.branch_index} value={b.branch_index}>{b.branch_name} ({b.branch_code})</option>
                     ))}
@@ -715,7 +721,6 @@ export default function MasterSettingsPage() {
           </form>
         </div>
 
-        {/* Right Side: Data Table */}
         <div className="xl:col-span-2 bg-card border border-line rounded-lg overflow-hidden flex flex-col">
           {loading ? (
             <div className="py-20 text-center text-slate-400 text-xs flex items-center justify-center gap-2">
@@ -769,21 +774,19 @@ export default function MasterSettingsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-line text-xs text-slate-300">
+                  {/* 💡 මෙතන filteredDataList මඟින් තමයි ෆිල්ටර් වුණු ඩේටා ටික පෙන්වන්නේ */}
                   {filteredDataList.length === 0 ? (
-                    <tr><td colSpan="6" className="p-6 text-center text-slate-500">No records found.</td></tr>
+                    <tr><td colSpan="7" className="p-6 text-center text-slate-500">No records found for the selected filter.</td></tr>
                   ) : (
                     filteredDataList.map((item, mapIndex) => {
-                      // 💡 1. නිවැරදි Primary Key එක තේරීම
                       const fieldKey = activeTab === "categories" ? "category_index" 
                                      : activeTab === "companies" ? "company_index" 
                                      : activeTab === "branches" ? "branch_index"
                                      : "terminal_index";
                       
-                      // 💡 2. ඒ ඒ ටැබ් එකට ආවේණික වූ Index එක ලබා ගැනීම
                       const idx = item[fieldKey] || mapIndex; 
                       
                       return (
-                        // 💡 3. Key එක Unique වීමට ActiveTab එකත් එක්කම Key එක සෑදීම
                         <tr key={`${activeTab}-${idx}`} className="hover:bg-base/30 transition-colors">
                           {activeTab === "categories" && (
                             <>
@@ -825,7 +828,6 @@ export default function MasterSettingsPage() {
                             <>
                               <td className="p-3 font-mono">#{item.index}</td>
                               <td className="p-3 font-mono">{item.branch_index}</td>
-                              
                               <td className="p-3 font-medium text-white">{item.branch_name}</td>
                               <td className="p-3 font-mono text-slate-400">{item.branch_code}</td>
                               <td className="p-3 font-mono text-slate-400">{item.company_index}</td>
@@ -835,7 +837,7 @@ export default function MasterSettingsPage() {
                                 </span>
                               </td>
                               <td className="p-3 text-right">
-                                <button onClick={() => handleToggleActive(fieldKey, idx, item.is_active)} className="px-2.5 py-1 bg-base border border-line rounded text-[11px] text-slate-300 hover:text-white hover:border-accent transition-colors">
+                                <button onClick={() => handleToggleActive("index", item.index, item.is_active)} className="px-2.5 py-1 bg-base border border-line rounded text-[11px] text-slate-300 hover:text-white hover:border-accent transition-colors">
                                   {item.is_active ? "Deactivate" : "Activate"}
                                 </button>
                               </td>

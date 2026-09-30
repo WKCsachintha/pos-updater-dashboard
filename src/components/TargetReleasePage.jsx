@@ -1,3 +1,6 @@
+
+
+
 // import { useState, useEffect, useMemo } from "react";
 // import axios from "axios";
 
@@ -7,9 +10,10 @@
 //   const [categories, setCategories] = useState([]);
 //   const [companyList, setCompanyList] = useState([]);
 //   const [branchList, setBranchList] = useState([]);
+//   const [terminalList, setTerminalList] = useState([]); // Master Terminals
   
 //   const [selectedCategory, setSelectedCategory] = useState("");
-//   const [versionId, setVersionId] = useState(""); // releaseName වෙනුවට versionId භාවිත කර ඇත
+//   const [versionId, setVersionId] = useState("");
   
 //   const [company, setCompany] = useState("");
 //   const [branch, setBranch] = useState("ALL");
@@ -26,10 +30,11 @@
 
 //   async function fetchInitialMasterData() {
 //     try {
-//       const [catRes, compRes, branchRes] = await Promise.all([
+//       const [catRes, compRes, branchRes, termRes] = await Promise.all([
 //         axios.get(`${API_BASE}?action=get_all_release_categories`),
 //         axios.get(`${API_BASE}?action=get_all_companies`),
-//         axios.get(`${API_BASE}?action=get_all_branches`)
+//         axios.get(`${API_BASE}?action=get_all_branches`),
+//         axios.get(`${API_BASE}?action=get_all_terminals`)
 //       ]);
 
 //       if (catRes.data?.status === "success" && Array.isArray(catRes.data.data)) {
@@ -50,6 +55,12 @@
 //         setBranchList(branchRes.data.data);
 //       } else {
 //         setBranchList([]);
+//       }
+
+//       if (termRes.data?.status === "success" && Array.isArray(termRes.data.data)) {
+//         setTerminalList(termRes.data.data);
+//       } else {
+//         setTerminalList([]);
 //       }
 //     } catch (error) {
 //       console.error("Error fetching master dropdowns:", error);
@@ -72,6 +83,24 @@
 //       setLoadingDeployments(false);
 //     }
 //   };
+
+//   // 💡 තෝරාගත් Company එකට අදාළ Branches පමණක් Filter කිරීම
+//   const filteredBranches = useMemo(() => {
+//     if (!company || company === "") return branchList;
+//     return branchList.filter(b => String(b.company_index) === String(company));
+//   }, [branchList, company]);
+
+//   // 💡 තෝරාගත් Company සහ Branch එකට අදාළ Terminals පමණක් Filter කිරීම
+//   const filteredTerminals = useMemo(() => {
+//     let list = terminalList;
+//     if (company && company !== "") {
+//       list = list.filter(t => String(t.company_index) === String(company));
+//     }
+//     if (branch && branch !== "") {
+//       list = list.filter(t => String(t.branch_index) === String(branch));
+//     }
+//     return list;
+//   }, [terminalList, company, branch]);
 
 //   const categoryVersions = useMemo(() => {
 //     if (!selectedCategory || !Array.isArray(versions)) return [];
@@ -109,7 +138,6 @@
 //       return;
 //     }
 
-//     // 💡 versionId එක Integer එකක් ලෙස Payload එකට යවයි
 //     const targetData = {
 //       versionId: parseInt(versionId, 10),
 //       company: parseInt(company, 10),
@@ -129,6 +157,7 @@
 //         // Reset Form
 //         setVersionId("");
 //         setCompany("");
+//         setBranch("ALL");
 //         setTerminal("ALL");
 //         setIsMandatory(false);
 //       } else {
@@ -166,7 +195,9 @@
 //               >
 //                 {categories.length === 0 ? (
 //                   <option value="">Loading Categories...</option>
-//                 ) : (
+//                 ) :
+//                 (
+                  
 //                   categories.map((cat, idx) => (
 //                     <option key={`cat-${idx}`} value={cat}>{cat}</option>
 //                   ))
@@ -204,7 +235,11 @@
 //                 </label>
 //                 <select
 //                   value={company}
-//                   onChange={(e) => setCompany(e.target.value)}
+//                   onChange={(e) => {
+//                     setCompany(e.target.value);
+//                     setBranch("ALL"); // Company වෙනස් කරද්දී Branch, Terminal reset කරයි
+//                     setTerminal("ALL");
+//                   }}
 //                   required
 //                   className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent"
 //                 >
@@ -222,11 +257,14 @@
 //                 <label className="block text-xs font-medium text-slate-400 mb-1.5">Target Branch</label>
 //                 <select
 //                   value={branch}
-//                   onChange={(e) => setBranch(e.target.value)}
+//                   onChange={(e) => {
+//                     setBranch(e.target.value);
+//                     setTerminal("ALL"); // Branch වෙනස් කරද්දී Terminal reset කරයි
+//                   }}
 //                   className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent"
 //                 >
 //                   <option value="ALL">ALL Branches</option>
-//                   {branchList.map((b, idx) => (
+//                   {filteredBranches.map((b, idx) => (
 //                     <option key={`branch-${b.branch_index || idx}`} value={b.branch_index}>
 //                       {b.branch_name} ({b.branch_code || `Index: ${b.branch_index}`})
 //                     </option>
@@ -235,16 +273,21 @@
 //               </div>
 //             </div>
 
-//             {/* Target Terminal / Machine ID */}
+//             {/* Target Terminal Dropdown */}
 //             <div>
 //               <label className="block text-xs font-medium text-slate-400 mb-1.5">Target Terminal / Machine ID</label>
-//               <input
-//                 type="text"
+//               <select
 //                 value={terminal}
 //                 onChange={(e) => setTerminal(e.target.value)}
-//                 placeholder="e.g. DelPan3 or ALL"
 //                 className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent font-mono"
-//               />
+//               >
+//                 <option value="ALL">ALL Terminals</option>
+//                 {filteredTerminals.map((t, idx) => (
+//                   <option key={`term-${t.terminal_index || idx}`} value={t.terminal_id || t.terminal_number}>
+//                     {t.terminal_id ? `${t.terminal_id} (No: ${t.terminal_number})` : `Terminal #${t.terminal_number}`}
+//                   </option>
+//                 ))}
+//               </select>
 //             </div>
 
 //             {/* Mandatory Checkbox */}
@@ -325,7 +368,6 @@
 
 
 
-
 import { useState, useEffect, useMemo } from "react";
 import axios from "axios";
 
@@ -335,14 +377,14 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
   const [categories, setCategories] = useState([]);
   const [companyList, setCompanyList] = useState([]);
   const [branchList, setBranchList] = useState([]);
-  const [terminalList, setTerminalList] = useState([]); // Master Terminals
+  const [terminalList, setTerminalList] = useState([]); 
   
   const [selectedCategory, setSelectedCategory] = useState("");
   const [versionId, setVersionId] = useState("");
   
   const [company, setCompany] = useState("");
-  const [branch, setBranch] = useState("ALL");
-  const [terminal, setTerminal] = useState("ALL");
+  const [branch, setBranch] = useState(""); // 💡 මුල් අගය හිස් කර ඇත
+  const [terminal, setTerminal] = useState(""); // 💡 මුල් අගය හිස් කර ඇත
   const [isMandatory, setIsMandatory] = useState(false);
   
   const [activeDeployments, setActiveDeployments] = useState([]);
@@ -411,17 +453,16 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
 
   // 💡 තෝරාගත් Company එකට අදාළ Branches පමණක් Filter කිරීම
   const filteredBranches = useMemo(() => {
-    if (!company || company === "ALL") return branchList;
+    if (!company) return []; // Company එකක් තෝරා නොමැතිනම් හිස්ව තබයි
     return branchList.filter(b => String(b.company_index) === String(company));
   }, [branchList, company]);
 
   // 💡 තෝරාගත් Company සහ Branch එකට අදාළ Terminals පමණක් Filter කිරීම
   const filteredTerminals = useMemo(() => {
-    let list = terminalList;
-    if (company && company !== "ALL") {
-      list = list.filter(t => String(t.company_index) === String(company));
-    }
-    if (branch && branch !== "ALL") {
+    if (!company || !branch) return []; // Branch එක තෝරන තුරු හිස්ව තබයි
+    let list = terminalList.filter(t => String(t.company_index) === String(company));
+    
+    if (branch !== "ALL") {
       list = list.filter(t => String(t.branch_index) === String(branch));
     }
     return list;
@@ -437,37 +478,34 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
   const handleSelectDeployment = (item) => {
     if (!item) return;
 
+    // ෆෝම් එක Clear කිරීම
+    setVersionId("");
+    setCompany("");
+    setBranch("");
+    setTerminal("");
+    setIsMandatory(false);
+
     if (item.category) {
       setSelectedCategory(item.category);
     }
+
     setTimeout(() => {
-      setVersionId(item.versionId || "");
+      setVersionId(item.versionId ? String(item.versionId) : "");
+      setCompany(item.company_index ? String(item.company_index) : item.company || "");
+      setBranch(item.branch ? String(item.branch) : "ALL");
+      setTerminal(item.terminal ? String(item.terminal) : "ALL");
+      setIsMandatory(Boolean(item.mandatory));
     }, 50);
-    
-    setCompany(item.company_index || item.company || "");
-    setBranch(item.branch ? String(item.branch) : "ALL");
-    setTerminal(item.terminal || "ALL");
-    setIsMandatory(Boolean(item.mandatory));
   };
 
   async function handleSubmit(e) {
     e.preventDefault();
 
-    if (!versionId) {
-      alert("Please select a Release Version from the dropdown.");
-      return;
-    }
-
-    if (!company) {
-      alert("Please select a Target Company.");
-      return;
-    }
-
     const targetData = {
       versionId: parseInt(versionId, 10),
       company: parseInt(company, 10),
       branch: branch,
-      terminal: terminal || "ALL",
+      terminal: terminal,
       isMandatory: isMandatory ? 1 : 0,
     };
 
@@ -482,8 +520,8 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
         // Reset Form
         setVersionId("");
         setCompany("");
-        setBranch("ALL");
-        setTerminal("ALL");
+        setBranch("");
+        setTerminal("");
         setIsMandatory(false);
       } else {
         alert("Error: " + (response.data.message || "Could not publish target."));
@@ -493,6 +531,9 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
       alert("Error connecting to server.");
     }
   }
+
+  // 💡 Submit Button එක Enable වීමේ Logic එක (සියලුම පියවර සම්පූර්ණ කළ යුතුමයි)
+  const isFormValid = selectedCategory && versionId && company && branch && terminal;
 
   return (
     <section className="space-y-6 fade-in">
@@ -509,7 +550,7 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
             
             {/* Category Dropdown */}
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Application Category</label>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">Application Category <span className="text-red-400">*</span></label>
               <select
                 value={selectedCategory}
                 onChange={(e) => {
@@ -518,19 +559,18 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
                 }}
                 className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent"
               >
-                {categories.length === 0 ? (
-                  <option value="">Loading Categories...</option>
-                ) : (
-                  categories.map((cat, idx) => (
-                    <option key={`cat-${idx}`} value={cat}>{cat}</option>
-                  ))
-                )}
+                <option value="" disabled>-- Select Category --</option>
+                {categories.map((cat, idx) => (
+                  <option key={`cat-${idx}`} value={cat}>{cat}
+                    {/* {cat.display_name} */}
+                  </option>
+                ))}
               </select>
             </div>
 
             {/* Release Version Dropdown */}
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Release Version</label>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">Release Version <span className="text-red-400">*</span></label>
               <select
                 value={versionId}
                 onChange={(e) => setVersionId(e.target.value)}
@@ -538,15 +578,11 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
                 className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent font-mono"
               >
                 <option value="" disabled>-- Select Version --</option>
-                {categoryVersions.length === 0 ? (
-                  <option value="" disabled>No versions found for this category</option>
-                ) : (
-                  categoryVersions.map((v, idx) => (
-                    <option key={`ver-${v.versionId || idx}`} value={v.versionId}>
-                      v{v.versionNumber} {v.releaseNotes ? ` - ${v.releaseNotes.substring(0, 30)}...` : ""}
-                    </option>
-                  ))
-                )}
+                {categoryVersions.map((v, idx) => (
+                  <option key={`ver-${v.versionId || idx}`} value={v.versionId}>
+                    v{v.versionNumber} {v.releaseNotes ? ` - ${v.releaseNotes.substring(0, 30)}...` : ""}
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -560,8 +596,8 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
                   value={company}
                   onChange={(e) => {
                     setCompany(e.target.value);
-                    setBranch("ALL"); // Company වෙනස් කරද්දී Branch, Terminal reset කරයි
-                    setTerminal("ALL");
+                    setBranch(""); // Company වෙනස් කරද්දී Branch හිස් කරයි
+                    setTerminal(""); // Terminal හිස් කරයි
                   }}
                   required
                   className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent"
@@ -577,16 +613,21 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
 
               {/* Target Branch Dropdown */}
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Target Branch</label>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                  Target Branch <span className="text-red-400">*</span>
+                </label>
                 <select
                   value={branch}
                   onChange={(e) => {
                     setBranch(e.target.value);
-                    setTerminal("ALL"); // Branch වෙනස් කරද්දී Terminal reset කරයි
+                    setTerminal(""); // Branch වෙනස් කරද්දී Terminal හිස් කරයි
                   }}
-                  className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent"
+                  required
+                  disabled={!company}
+                  className={`w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent ${!company && "opacity-50 cursor-not-allowed"}`}
                 >
-                  <option value="ALL">ALL Branches</option>
+                  <option value="" disabled>-- Select Branch --</option>
+                  {company && <option value="ALL">ALL Branches</option>}
                   {filteredBranches.map((b, idx) => (
                     <option key={`branch-${b.branch_index || idx}`} value={b.branch_index}>
                       {b.branch_name} ({b.branch_code || `Index: ${b.branch_index}`})
@@ -598,18 +639,29 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
 
             {/* Target Terminal Dropdown */}
             <div>
-              <label className="block text-xs font-medium text-slate-400 mb-1.5">Target Terminal / Machine ID</label>
+              <label className="block text-xs font-medium text-slate-400 mb-1.5">
+                Target Terminal / Machine ID <span className="text-red-400">*</span>
+              </label>
               <select
                 value={terminal}
                 onChange={(e) => setTerminal(e.target.value)}
-                className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent font-mono"
+                required
+                disabled={!branch}
+                className={`w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent font-mono ${!branch && "opacity-50 cursor-not-allowed"}`}
               >
-                <option value="ALL">ALL Terminals</option>
-                {filteredTerminals.map((t, idx) => (
-                  <option key={`term-${t.terminal_index || idx}`} value={t.terminal_id || t.terminal_number}>
-                    {t.terminal_id ? `${t.terminal_id} (No: ${t.terminal_number})` : `Terminal #${t.terminal_number}`}
-                  </option>
-                ))}
+                <option value="" disabled>-- Select Terminal --</option>
+                {branch && filteredTerminals.length === 0 ? (
+                  <option disabled>No Terminals Found</option>
+                ) : (
+                  <>
+                    {branch && <option value="ALL">ALL Terminals</option>}
+                    {filteredTerminals.map((t, idx) => (
+                      <option key={`term-${t.terminal_index || idx}`} value={t.terminal_id || t.terminal_number}>
+                        {t.terminal_id ? `${t.terminal_id} (No: ${t.terminal_number})` : `Terminal #${t.terminal_number}`}
+                      </option>
+                    ))}
+                  </>
+                )}
               </select>
             </div>
 
@@ -624,13 +676,20 @@ export default function TargetReleasePage({ versions = [], onPublish }) {
               <span className="text-xs text-slate-300">Mark as mandatory update</span>
             </label>
 
-            <button type="submit" className="w-full py-2.5 bg-accent hover:bg-accentdeep text-white text-sm font-medium rounded-md transition-colors mt-2">
-              Publish Release
+            {/* 💡 Submit Button - Disable Logic applied */}
+            <button 
+              type="submit" 
+              disabled={!isFormValid}
+              className={`w-full py-2.5 text-white text-sm font-medium rounded-md transition-colors mt-2 ${
+                isFormValid ? "bg-accent hover:bg-accentdeep" : "bg-slate-600 opacity-50 cursor-not-allowed"
+              }`}
+            >
+              {isFormValid ? "Publish Release" : "Complete all fields to publish"}
             </button>
           </form>
         </div>
 
-        {/* Right Side: Active Deployments Panel */}
+        {/* Right Side: Active Deployments Panel (Unchanged) */}
         <div className="xl:col-span-2 bg-card border border-line rounded-lg p-6 flex flex-col justify-between">
           <div>
             <div className="flex items-center justify-between mb-1">

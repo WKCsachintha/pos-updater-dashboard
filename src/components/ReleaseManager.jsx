@@ -1,8 +1,9 @@
 
+
 import { useMemo, useRef, useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE = "http://demo.onlineserp.com/serp/app/integration/poss_new/exe_realese.php";
+const API_BASE = "http://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
 
 function Dropzone({ file, setFile }) {
   const inputRef = useRef(null);
@@ -10,7 +11,7 @@ function Dropzone({ file, setFile }) {
 
   return (
     <div>
-      <label className="block text-xs font-medium text-slate-400 mb-2">Update Package (.zip)</label>
+      <label className="block text-xs font-medium text-slate-400 mb-2">Update Package (.zip) <span className="text-red-400">*</span></label>
       <div
         onClick={() => inputRef.current?.click()}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
@@ -48,7 +49,7 @@ function Dropzone({ file, setFile }) {
 }
 
 function RegistryItem({ version, onDeleteRelease }) {
-  const categoryName = version.systemType || version.category || "General POS";
+  const categoryName = version.systemType || version.category || "";
 
   return (
     <div className={`border rounded-lg p-4 transition-colors ${version.status === "Active" ? "border-accent/50 bg-accent/[0.04]" : "border-line bg-card/60"}`}>
@@ -77,7 +78,7 @@ function RegistryItem({ version, onDeleteRelease }) {
             {version.fileName || version.fileUrl?.split('/').pop() || `${categoryName.replace(/\s+/g, "_")}_v${version.versionNumber}.zip`}
           </span>
         </div>
-        <button
+        {/* <button
           onClick={() => onDeleteRelease(version.versionId)}
           className="text-slate-500 hover:text-red-400 p-1 transition-colors shrink-0"
           title="Delete Build"
@@ -85,7 +86,7 @@ function RegistryItem({ version, onDeleteRelease }) {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="1.8" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" d="M14.74 9-.346 9m-4.788 0L9.26 9M19.228 5.79A48.11 48.11 0 0 0 12 5.4c-2.451 0-4.86.196-7.228.589M6.6 5.79 6 4.6a2.25 2.25 0 0 1 2.008-1.25h7.984A2.25 2.25 0 0 1 18 4.6l-.6 1.19m-11.4 0h13.5" />
           </svg>
-        </button>
+        </button> */}
       </div>
 
       <div className="flex items-center justify-between mt-3 text-[11px] text-slate-500">
@@ -101,8 +102,12 @@ export default function ReleaseManager({ versions = [], onPublish, onDeleteRelea
   const [search, setSearch] = useState("");
   const [categoriesList, setCategoriesList] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
+  
+  // 💡 අලුත් Form States
+  const [selectedCategory, setSelectedCategory] = useState("");
+  const [versionNumber, setVersionNumber] = useState("");
+  const [releaseNotes, setReleaseNotes] = useState("");
 
-  // Database එකෙන් Active Categories Objects Load කරගැනීම
   useEffect(() => {
     async function fetchCategories() {
       try {
@@ -124,8 +129,12 @@ export default function ReleaseManager({ versions = [], onPublish, onDeleteRelea
       (v.versionNumber && v.versionNumber.toLowerCase().includes(q)) ||
       (v.releaseNotes && v.releaseNotes.toLowerCase().includes(q)) ||
       (v.systemType && v.systemType.toLowerCase().includes(q))
+      (v.category && v.category.toLowerCase().includes(q))
     );
   }, [versions, search]);
+
+  // 💡 Upload Button එක සක්‍රිය වීමේ පරීක්ෂාව
+  const isFormValid = file && selectedCategory && versionNumber;
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -134,21 +143,36 @@ export default function ReleaseManager({ versions = [], onPublish, onDeleteRelea
       return;
     }
 
-    const form = new FormData(e.target);
+    // 💡 එකම Version Number එක නැවත ඇතුළත් කිරීම වැළැක්වීමේ පරීක්ෂාව
+    const isDuplicate = versions.some((v) => {
+      const categoryObj = categoriesList.find(c => String(c.category_index) === String(selectedCategory));
+      const catName = categoryObj ? categoryObj.display_name : "";
+      
+      return (v.versionNumber === versionNumber) && (v.systemType === catName || v.category === catName);
+    });
+
+    if (isDuplicate) {
+      alert(`Error: Version v${versionNumber} already exists for this Category! Please enter a new version number.`);
+      return;
+    }
+
     setIsUploading(true);
 
     try {
-      // PHP Query එකට category_index (ID) එක යවනු ලැබේ
       await onPublish({
-        systemType: form.get("systemType"), 
-        versionNumber: form.get("versionNumber"),
-        releaseNotes: form.get("releaseNotes"),
+        systemType: selectedCategory, 
+        versionNumber: versionNumber,
+        releaseNotes: releaseNotes,
         fileName: file.name,
         file: file
       });
 
-      e.target.reset();
+      // සාර්ථක වූ පසු Form එක Clear කිරීම
       setFile(null);
+      setSelectedCategory("");
+      setVersionNumber("");
+      setReleaseNotes("");
+      
     } catch (err) {
       console.error("Upload failed:", err);
     } finally {
@@ -172,30 +196,31 @@ export default function ReleaseManager({ versions = [], onPublish, onDeleteRelea
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Application Category</label>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Application Category <span className="text-red-400">*</span></label>
                 <select 
                   name="systemType" 
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
                   required
                   className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 focus:outline-none focus:ring-1 focus:ring-accent"
                 >
-                  {categoriesList.length === 0 ? (
-                    <option value="1">Supermarket POS</option>
-                  ) : (
-                    categoriesList.map((cat) => (
-                      /* Value එක ලෙස category_index එක ලබා දේ */
-                      <option key={cat.category_index} value={cat.category_index}>
-                        {cat.display_name}
-                      </option>
-                    ))
-                  )}
+                  {/* 💡 Default Option එක ලෙස Select Category එක් කර ඇත */}
+                  <option value="" disabled>-- Select Category --</option>
+                  {categoriesList.map((cat) => (
+                    <option key={cat.category_index} value={cat.category_index}>
+                      {cat.display_name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-slate-400 mb-1.5">Version Number</label>
+                <label className="block text-xs font-medium text-slate-400 mb-1.5">Version Number <span className="text-red-400">*</span></label>
                 <input
                   name="versionNumber"
                   type="text"
+                  value={versionNumber}
+                  onChange={(e) => setVersionNumber(e.target.value)}
                   required
                   placeholder="e.g. 1.0.8"
                   className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 font-mono placeholder:text-slate-600 focus:outline-none focus:ring-1 focus:ring-accent"
@@ -207,6 +232,8 @@ export default function ReleaseManager({ versions = [], onPublish, onDeleteRelea
               <label className="block text-xs font-medium text-slate-400 mb-1.5">Release Notes</label>
               <textarea
                 name="releaseNotes"
+                value={releaseNotes}
+                onChange={(e) => setReleaseNotes(e.target.value)}
                 rows="4"
                 placeholder={"- Fixed receipt printer timeout on slow networks\n- Improved barcode scan latency"}
                 className="w-full bg-base border border-line rounded-md px-3 py-2 text-sm text-slate-200 placeholder:text-slate-600 font-mono focus:outline-none focus:ring-1 focus:ring-accent"
@@ -214,13 +241,16 @@ export default function ReleaseManager({ versions = [], onPublish, onDeleteRelea
               <p className="text-[11px] text-slate-600 mt-1">Markdown supported</p>
             </div>
 
+            {/* 💡 Button Disable Logic එක */}
             <button 
               type="submit" 
-              disabled={isUploading}
-              className="w-full sm:w-auto px-5 py-2.5 bg-accent hover:bg-accentdeep text-white text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+              disabled={isUploading || !isFormValid}
+              className={`w-full sm:w-auto px-5 py-2.5 text-white text-sm font-medium rounded-md transition-colors flex items-center justify-center gap-2 ${
+                (isUploading || !isFormValid) ? "bg-slate-600 opacity-50 cursor-not-allowed" : "bg-accent hover:bg-accentdeep"
+              }`}
             >
               {isUploading && <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>}
-              {isUploading ? "Uploading Build..." : "Upload Update"}
+              {isUploading ? "Uploading Build..." : !isFormValid ? "Complete required fields" : "Upload Update"}
             </button>
           </form>
         </div>
@@ -247,7 +277,7 @@ export default function ReleaseManager({ versions = [], onPublish, onDeleteRelea
               <p className="text-xs text-slate-600 text-center py-10">No versions found in Database.</p>
             ) : (
               filtered.map((v) => (
-                <RegistryItem key={v.versionId} version={v} onDeleteRelease={onDeleteRelease} />
+                <RegistryItem key={v.versionId} version={v}  />
               ))
             )}
           </div>
