@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import axios from "axios";
 
-const API_BASE = "http://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
+const API_BASE = "handleToggleActive://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
 
 const TITLES = {
   overview: ["Dashboard Overview", "Live status across all company deployments"],

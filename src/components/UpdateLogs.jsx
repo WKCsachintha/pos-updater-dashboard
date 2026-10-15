@@ -3,7 +3,7 @@ import StatusPill from "./StatusPill";
 import axios from "axios";
 
 // Backend API URL
-const API_BASE = "http://demo.onlineserp.com/serp/app/integration/poss_new/exe_realese.php";
+const API_BASE = "https://demo.onlineserp.com/serp/app/integration/poss_new/exe_realese.php";
 
 export default function UpdateLogs({ onViewError }) {
   const [company, setCompany] = useState("");

@@ -10,7 +10,7 @@ const TABS = [
 ];
 
 // Backend API URL
-const API_BASE = "http://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
+const API_BASE = "https://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
 
 export default function DeploymentMonitor({ onViewError }) {
   const [filter, setFilter] = useState("all");

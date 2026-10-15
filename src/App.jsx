@@ -17,7 +17,7 @@ import MasterSettingsPage from "./components/MasterSettingsPage";
 import LoginPage from "./components/LoginPage";
 
 // Backend API URL
-const API_BASE = "http://demo.onlineserp.com/serp/app/integration/poss_new/exe_realese.php";
+const API_BASE = "https://demo.onlineserp.com/serp/app/integration/poss_new/exe_realese.php";
 
 export default function App() {
   // Login Status එක SessionStorage මඟින් පාලනය කිරීම

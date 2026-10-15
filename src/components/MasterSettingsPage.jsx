@@ -445,7 +445,7 @@ import { useState, useEffect } from "react";
 import axios from "axios";
 
 // සැබෑ සර්වර් API එකේ URL එක
-const API_BASE = "http://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
+const API_BASE = "https://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
 
 export default function MasterSettingsPage() {
   const [activeTab, setActiveTab] = useState("categories"); 
