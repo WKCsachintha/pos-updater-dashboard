@@ -16,7 +16,7 @@ const IS_DEV = import.meta.env.DEV;
 export const API_BASE_URL = IS_DEV
   ? "/api"
   : (import.meta.env.VITE_API_BASE_URL ||
-     "https://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_release_v2.php");
+     "https://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php");
 
 // Alias for backwards compatibility
 export const API_BASE = API_BASE_URL;
@@ -86,6 +86,24 @@ export const dashboardApi = {
 /**
  * Deployments & Target Releases Endpoints
  */
+// export const deploymentApi = {
+//   getDeployments: async () => {
+//     const res = await apiClient.get("", { params: { action: "get_deployments" } });
+//     return res.data;
+//   },
+//   getTargetDeployments: async () => {
+//     const res = await apiClient.get("", { params: { action: "get_target_deployments" } });
+//     return res.data;
+//   },
+//   publishTarget: async (targetData) => {
+//     // 💡 toFormBody ඉවත් කර කෙලින්ම targetData JSON ලෙස යැවීම
+//     const res = await apiClient.post("", targetData, {
+//       params: { action: "publish_target" },
+//     });
+//     return res.data;
+//   },
+// };
+
 export const deploymentApi = {
   getDeployments: async () => {
     const res = await apiClient.get("", { params: { action: "get_deployments" } });
@@ -95,8 +113,11 @@ export const deploymentApi = {
     const res = await apiClient.get("", { params: { action: "get_target_deployments" } });
     return res.data;
   },
+  getDeploymentHistory: async () => {
+    const res = await apiClient.get("", { params: { action: "get_deployment_history" } });
+    return res.data;
+  },
   publishTarget: async (targetData) => {
-    // 💡 toFormBody ඉවත් කර කෙලින්ම targetData JSON ලෙස යැවීම
     const res = await apiClient.post("", targetData, {
       params: { action: "publish_target" },
     });
