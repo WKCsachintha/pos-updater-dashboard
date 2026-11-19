@@ -34,11 +34,29 @@ export const apiClient = axios.create({
   },
 });
 
+// Request interceptor to attach Bearer Token if available
+apiClient.interceptors.request.use(
+  (config) => {
+    const token = sessionStorage.getItem("pos_token");
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => Promise.reject(error)
+);
+
 // Response interceptor for consistent error extraction
 apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
-    console.error("API Service Error:", error);
+    console.error("API Service Error Details:", {
+      message: error.message,
+      url: error.config?.url,
+      baseURL: error.config?.baseURL,
+      status: error.response?.status,
+      data: error.response?.data,
+    });
     return Promise.reject(error);
   }
 );
