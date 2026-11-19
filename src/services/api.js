@@ -16,7 +16,7 @@ const IS_DEV = import.meta.env.DEV;
 export const API_BASE_URL = IS_DEV
   ? "/api"
   : (import.meta.env.VITE_API_BASE_URL ||
-     "https://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese_v2.php");
+     "https://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_release_v2.php");
 
 // Alias for backwards compatibility
 export const API_BASE = API_BASE_URL;
