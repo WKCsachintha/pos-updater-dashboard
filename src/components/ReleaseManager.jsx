@@ -3,7 +3,7 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import axios from "axios";
 
-const API_BASE = "handleToggleActive://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_realese.php";
+const API_BASE = "https://demo.onlineserp.com/serp_dev/app/integration/poss_new/exe_release_v2.php";
 
 function Dropzone({ file, setFile }) {
   const inputRef = useRef(null);
