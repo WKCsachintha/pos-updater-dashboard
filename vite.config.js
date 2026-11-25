@@ -15,7 +15,7 @@ export default defineConfig({
         target: 'https://demo.onlineserp.com',
         changeOrigin: true,
         secure: true,
-        rewrite: (path) => path.replace(/^\/api/, '/serp_dev/app/integration/poss_new/exe_realese.php'),
+        rewrite: (path) => path.replace(/^\/api/, '/serp/app/integration/poss_new/exe_realese.php'),
       },
     },
   },
